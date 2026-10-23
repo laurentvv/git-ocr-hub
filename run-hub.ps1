@@ -36,18 +36,32 @@ if (-not $pythonCmd) {
 
 # 2. Menu interactif si aucune action spécifiée
 if (-not $Action) {
+    $serverRunning = $false
+    try {
+        $tcp = Test-NetConnection -ComputerName 127.0.0.1 -Port 8080 -WarningAction SilentlyContinue
+        $serverRunning = $tcp.TcpTestSucceeded
+    } catch {}
+
+    $statusBadge = if ($serverRunning) { "[ EN LIGNE (Port 8080) ]" } else { "[ HORS LIGNE ]" }
+    $statusColor = if ($serverRunning) { "Green" } else { "DarkYellow" }
+
     Write-Host "==========================================================" -ForegroundColor Cyan
     Write-Host "                Git OCR Hub - Menu Principal              " -ForegroundColor Cyan
     Write-Host "==========================================================" -ForegroundColor Cyan
+    Write-Host "  Serveur LLM Local : " -NoNewline
+    Write-Host "$statusBadge" -ForegroundColor $statusColor
+    Write-Host "----------------------------------------------------------" -ForegroundColor DarkGray
     Write-Host "  1. Afficher l'état de tous les dépôts (status)"
     Write-Host "  2. Synchroniser les dépôts propres (sync : fetch + pull FF)"
     Write-Host "  3. Revue diff OCR sur modifications locales (review)"
     Write-Host "  4. Audit complet d'un dépôt entier sans diff (scan)"
     Write-Host "  5. Exécution complète (sync + review + dashboard)"
     Write-Host "  6. Ouvrir le Dashboard HTML dans le navigateur (dashboard)"
+    Write-Host "  7. Démarrer le serveur LLM local (Qwen-27B / llama-server)"
+    Write-Host "  8. Lancer l'interface Web officielle d'OCR (ocr viewer)"
     Write-Host "  Q. Quitter"
     Write-Host "==========================================================" -ForegroundColor Cyan
-    $choice = Read-Host "Votre choix (1-6 ou Q)"
+    $choice = Read-Host "Votre choix (1-8 ou Q)"
 
     switch ($choice) {
         "1" { $Action = "status" }
@@ -60,6 +74,17 @@ if (-not $Action) {
         }
         "5" { $Action = "all"; $OpenDashboard = $true }
         "6" { $Action = "dashboard" }
+        "7" {
+            Write-Host "Démarrage du serveur LLM local dans une nouvelle fenêtre..." -ForegroundColor Yellow
+            Start-Process powershell -ArgumentList "-NoExit -File C:\Modeles_LLM\start-ocr-local.ps1 -Model Qwen-27B"
+            Start-Sleep -Seconds 3
+            exit 0
+        }
+        "8" {
+            Write-Host "Lancement de 'ocr viewer' sur http://localhost:5483..." -ForegroundColor Green
+            Start-Process "ocr" -ArgumentList "viewer"
+            exit 0
+        }
         default { Write-Host "Opération annulée."; exit 0 }
     }
 }
