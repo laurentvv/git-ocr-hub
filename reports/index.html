@@ -1,0 +1,1485 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Git OCR Hub - Dashboard</title>
+    <style>
+        :root {
+            --bg: #0f172a;
+            --surface: #1e293b;
+            --surface-hover: #334155;
+            --text: #f8fafc;
+            --text-muted: #94a3b8;
+            --primary: #38bdf8;
+            --success: #34d399;
+            --warning: #fbbf24;
+            --danger: #f87171;
+            --border: #334155;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            padding: 2rem;
+            line-height: 1.5;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+            padding-bottom: 1.5rem;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 2rem;
+        }
+        .header h1 { font-size: 1.8rem; font-weight: 700; color: var(--primary); }
+        .header p { color: var(--text-muted); font-size: 0.9rem; }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+        .stat-card {
+            background: var(--surface);
+            padding: 1rem;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            text-align: center;
+        }
+        .stat-card .val { font-size: 1.8rem; font-weight: bold; color: var(--text); }
+        .stat-card .label { font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; }
+        
+        .controls {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+        }
+        .search-box {
+            flex: 1;
+            min-width: 250px;
+            padding: 0.6rem 1rem;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+            background: var(--surface);
+            color: var(--text);
+            font-size: 0.95rem;
+        }
+        .filter-btn {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            color: var(--text-muted);
+            padding: 0.6rem 1rem;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .filter-btn:hover, .filter-btn.active {
+            background: var(--primary);
+            color: #0f172a;
+            font-weight: 600;
+        }
+
+        .repos-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+            gap: 1.25rem;
+        }
+        .repo-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1.2rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.8rem;
+            transition: transform 0.15s, border-color 0.15s;
+        }
+        .repo-card:hover {
+            border-color: var(--primary);
+            transform: translateY(-2px);
+        }
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 0.5rem;
+        }
+        .card-title h3 { font-size: 1.15rem; color: var(--text); word-break: break-all; }
+        .branch-tag {
+            font-size: 0.75rem;
+            background: #0f172a;
+            color: var(--primary);
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            font-family: monospace;
+            display: inline-block;
+            margin-top: 0.2rem;
+        }
+        .badges { display: flex; gap: 0.4rem; flex-wrap: wrap; justify-content: flex-end; }
+        .badge {
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+        }
+        .badge-success { background: rgba(52, 211, 153, 0.2); color: var(--success); }
+        .badge-warning { background: rgba(251, 191, 36, 0.2); color: var(--warning); }
+        .badge-danger { background: rgba(248, 113, 113, 0.2); color: var(--danger); }
+        .badge-info { background: rgba(56, 189, 248, 0.2); color: var(--primary); }
+        .badge-secondary { background: rgba(148, 163, 184, 0.2); color: var(--text-muted); }
+        .badge-primary { background: #38bdf8; color: #0f172a; }
+        .badge-dark { background: #0f172a; color: var(--text-muted); }
+
+        .repo-path { font-size: 0.8rem; color: var(--text-muted); word-break: break-all; }
+        .commit-info { font-size: 0.8rem; color: var(--text-muted); margin-top: 0.4rem; }
+        .files-box {
+            background: rgba(15, 23, 42, 0.6);
+            padding: 0.6rem;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            margin-top: 0.4rem;
+        }
+        .files-box ul { list-style: none; margin-top: 0.3rem; padding-left: 0.5rem; }
+        .files-box li { color: var(--warning); font-family: monospace; margin-bottom: 0.2rem; }
+        .review-box {
+            background: rgba(15, 23, 42, 0.8);
+            border-left: 3px solid var(--primary);
+            padding: 0.6rem;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            margin-top: 0.5rem;
+            max-height: 150px;
+            overflow-y: auto;
+        }
+        .review-box pre { white-space: pre-wrap; word-break: break-word; font-family: monospace; }
+        .card-footer {
+            margin-top: auto;
+            padding-top: 0.8rem;
+            border-top: 1px solid var(--border);
+        }
+        .report-link-btn {
+            display: inline-block;
+            width: 100%;
+            text-align: center;
+            background: #0f172a;
+            color: var(--primary);
+            border: 1px solid var(--primary);
+            padding: 0.5rem 0.8rem;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.2s;
+        }
+        .report-link-btn:hover {
+            background: var(--primary);
+            color: #0f172a;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div>
+            <h1>Git OCR Hub - Table de Bord</h1>
+            <p>Supervision et Revues de Code Assistées par IA locale (llama.cpp)</p>
+        </div>
+        <div>
+            <p>Dernière mise à jour : <strong>23/10/2026 21:39:07</strong></p>
+        </div>
+    </div>
+
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="val">53</div>
+            <div class="label">Total Dépôts</div>
+        </div>
+        <div class="stat-card">
+            <div class="val" style="color: var(--success);">43</div>
+            <div class="label">Dépôts Propres</div>
+        </div>
+        <div class="stat-card">
+            <div class="val" style="color: var(--warning);">10</div>
+            <div class="label">Avec Modifications</div>
+        </div>
+        <div class="stat-card">
+            <div class="val" style="color: var(--danger);">2</div>
+            <div class="label">En Retard (Pull)</div>
+        </div>
+        <div class="stat-card">
+            <div class="val" style="color: var(--primary);">6</div>
+            <div class="label">En Avance (Push)</div>
+        </div>
+    </div>
+
+    <div class="controls">
+        <input type="text" id="search" class="search-box" placeholder="Filtrer par nom de dépôt..." oninput="filterRepos()">
+        <button class="filter-btn active" onclick="setFilter('all', this)">Tous (53)</button>
+        <button class="filter-btn" onclick="setFilter('dirty', this)">Modifiés (10)</button>
+        <button class="filter-btn" onclick="setFilter('behind', this)">En retard (2)</button>
+        <button class="filter-btn" onclick="setFilter('clean', this)">Propres (43)</button>
+    </div>
+
+    <div class="repos-grid" id="reposGrid">
+        
+            <div class="repo-card" data-dirty="true" data-behind="1" data-ahead="2" data-name="trading-ai">
+                <div class="card-header">
+                    <div class="card-title">
+                        <h3>Trading-AI</h3>
+                        <span class="branch-tag">main</span>
+                    </div>
+                    <div class="badges">
+                        <span class="badge badge-warning">Dirty (2)</span>
+                        <span class="badge badge-danger">Retard -1</span> <span class="badge badge-info">Avance +2</span> 
+                        <span class="badge badge-dark">En veille</span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <p class="repo-path"><code>C:\GIT\Trading-AI</code></p>
+                    <div class="commit-info">Dernier commit: <code>6ada38f</code> - chore(agents): pin .agents/skills to LF and the DuckDB ledger to binary (CRLF smudge guard) (2026-10-16)</div>
+                    <div class="files-box"><strong>Fichiers modifiés :</strong><ul><li><code> M .gitignore</code></li><li><code>?? "Analyse Arbitrage Polymarket Et Arnaques.md"</code></li></ul></div>
+                    
+                </div>
+                <div class="card-footer">
+                    <a href="Trading-AI.html" class="report-link-btn">📄 Consulter le rapport HTML →</a>
+                </div>
+            </div>
+            
+            <div class="repo-card" data-dirty="false" data-behind="0" data-ahead="0" data-name="youtubetomp3">
+                <div class="card-header">
+                    <div class="card-title">
+                        <h3>YouTubeToMP3</h3>
+                        <span class="branch-tag">main</span>
+                    </div>
+                    <div class="badges">
+                        <span class="badge badge-success">Clean</span>
+                        <span class="badge badge-secondary">À jour</span>
+                        <span class="badge badge-dark">En veille</span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <p class="repo-path"><code>C:\GIT\YouTubeToMP3</code></p>
+                    <div class="commit-info">Dernier commit: <code>cc056f7</code> - chore: untrack .agent and .agents from git (keep local) (2026-10-18)</div>
+                    
+                    
+                </div>
+                <div class="card-footer">
+                    <a href="YouTubeToMP3.html" class="report-link-btn">📄 Consulter le rapport HTML →</a>
+                </div>
+            </div>
+            
+            <div class="repo-card" data-dirty="false" data-behind="0" data-ahead="0" data-name="agents-kit">
+                <div class="card-header">
+                    <div class="card-title">
+                        <h3>agents-kit</h3>
+                        <span class="branch-tag">main</span>
+                    </div>
+                    <div class="badges">
+                        <span class="badge badge-success">Clean</span>
+                        <span class="badge badge-secondary">À jour</span>
+                        <span class="badge badge-dark">En veille</span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <p class="repo-path"><code>C:\GIT\agents-kit</code></p>
+                    <div class="commit-info">Dernier commit: <code>8d05d96</code> - chore: weekly skills refresh (2 content updates, 27 re-pins) (#23) (2026-10-22)</div>
+                    
+                    
+                </div>
+                <div class="card-footer">
+                    <a href="agents-kit.html" class="report-link-btn">📄 Consulter le rapport HTML →</a>
+                </div>
+            </div>
+            
+            <div class="repo-card" data-dirty="false" data-behind="0" data-ahead="0" data-name="ai-doc2video">
+                <div class="card-header">
+                    <div class="card-title">
+                        <h3>ai-doc2video</h3>
+                        <span class="branch-tag">main</span>
+                    </div>
+                    <div class="badges">
+                        <span class="badge badge-success">Clean</span>
+                        <span class="badge badge-secondary">À jour</span>
+                        <span class="badge badge-dark">En veille</span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <p class="repo-path"><code>C:\GIT\ai-doc2video</code></p>
+                    <div class="commit-info">Dernier commit: <code>b8e43d8</code> - chore: untrack .agent and .agents from git (keep local) (2026-10-18)</div>
+                    
+                    
+                </div>
+                <div class="card-footer">
+                    <a href="ai-doc2video.html" class="report-link-btn">📄 Consulter le rapport HTML →</a>
+                </div>
+            </div>
+            
+            <div class="repo-card" data-dirty="false" data-behind="0" data-ahead="0" data-name="alerte-wti">
+                <div class="card-header">
+                    <div class="card-title">
+                        <h3>alerte-wti</h3>
+                        <span class="branch-tag">main</span>
+                    </div>
+                    <div class="badges">
+                        <span class="badge badge-success">Clean</span>
+                        <span class="badge badge-secondary">À jour</span>
+                        <span class="badge badge-dark">En veille</span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <p class="repo-path"><code>C:\GIT\alerte-wti</code></p>
+                    <div class="commit-info">Dernier commit: <code>36ff391</code> - chore: untrack .agent and .agents from git (keep local) (2026-10-18)</div>
+                    
+                    
+                </div>
+                <div class="card-footer">
+                    <a href="alerte-wti.html" class="report-link-btn">📄 Consulter le rapport HTML →</a>
+                </div>
+            </div>
+            
+            <div class="repo-card" data-dirty="false" data-behind="0" data-ahead="0" data-name="amd-ai-image-generator">
+                <div class="card-header">
+                    <div class="card-title">
+                        <h3>amd-ai-image-generator</h3>
+                        <span class="branch-tag">main</span>
+                    </div>
+                    <div class="badges">
+                        <span class="badge badge-success">Clean</span>
+                        <span class="badge badge-secondary">À jour</span>
+                        <span class="badge badge-dark">En veille</span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <p class="repo-path"><code>C:\GIT\amd-ai-image-generator</code></p>
+                    <div class="commit-info">Dernier commit: <code>8252d1c</code> - chore: untrack .agent and .agents from git (keep local) (2026-10-18)</div>
+                    
+                    
+                </div>
+                <div class="card-footer">
+                    <a href="amd-ai-image-generator.html" class="report-link-btn">📄 Consulter le rapport HTML →</a>
+                </div>
+            </div>
+            
+            <div class="repo-card" data-dirty="false" data-behind="0" data-ahead="0" data-name="ansible">
+                <div class="card-header">
+                    <div class="card-title">
+                        <h3>ansible</h3>
+                        <span class="branch-tag">main</span>
+                    </div>
+                    <div class="badges">
+                        <span class="badge badge-success">Clean</span>
+                        <span class="badge badge-secondary">À jour</span>
+                        <span class="badge badge-dark">En veille</span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <p class="repo-path"><code>C:\GIT\ansible</code></p>
+                    <div class="commit-info">Dernier commit: <code>3faa086</code> - chore: untrack .agent and .agents from git (keep local) (2026-10-18)</div>
+                    
+                    
+                </div>
+                <div class="card-footer">
+                    <a href="ansible.html" class="report-link-btn">📄 Consulter le rapport HTML →</a>
+                </div>
+            </div>
+            
+            <div class="repo-card" data-dirty="false" data-behind="0" data-ahead="0" data-name="arxiv-editorial-agent">
+                <div class="card-header">
+                    <div class="card-title">
+                        <h3>arxiv-editorial-agent</h3>
+                        <span class="branch-tag">main</span>
+                    </div>
+                    <div class="badges">
+                        <span class="badge badge-success">Clean</span>
+                        <span class="badge badge-secondary">À jour</span>
+                        <span class="badge badge-dark">En veille</span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <p class="repo-path"><code>C:\GIT\arxiv-editorial-agent</code></p>
+                    <div class="commit-info">Dernier commit: <code>5766dc2</code> - chore: posted_history update after post (2026-10-23)</div>
+                    
+                    
+                </div>
+                <div class="card-footer">
+                    <a href="arxiv-editorial-agent.html" class="report-link-btn">📄 Consulter le rapport HTML →</a>
+                </div>
+            </div>
+            
+            <div class="repo-card" data-dirty="false" data-behind="0" data-ahead="0" data-name="backup-nextcloud">
+                <div class="card-header">
+                    <div class="card-title">
+                        <h3>backup-nextcloud</h3>
+                        <span class="branch-tag">main</span>
+                    </div>
+                    <div class="badges">
+                        <span class="badge badge-success">Clean</span>
+                        <span class="badge badge-secondary">À jour</span>
+                        <span class="badge badge-dark">En veille</span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <p class="repo-path"><code>C:\GIT\backup-nextcloud</code></p>
+                    <div class="commit-info">Dernier commit: <code>6102270</code> - chore: untrack .agent and .agents from git (keep local) (2026-10-18)</div>
+                    
+                    
+                </div>
+                <div class="card-footer">
+                    <a href="backup-nextcloud.html" class="report-link-btn">📄 Consulter le rapport HTML →</a>
+                </div>
+            </div>
+            
+            <div class="repo-card" data-dirty="true" data-behind="0" data-ahead="0" data-name="blender-ia">
+                <div class="card-header">
+                    <div class="card-title">
+                        <h3>blender-ia</h3>
+                        <span class="branch-tag">main</span>
+                    </div>
+                    <div class="badges">
+                        <span class="badge badge-warning">Dirty (44)</span>
+                        <span class="badge badge-secondary">À jour</span>
+                        <span class="badge badge-dark">En veille</span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <p class="repo-path"><code>C:\GIT\blender-ia</code></p>
+                    <div class="commit-info">Dernier commit: <code>a9068d1</code> - chore: remove unused GitHub Actions workflows (no releases published) (#5) (2026-10-22)</div>
+                    <div class="files-box"><strong>Fichiers modifiés :</strong><ul><li><code> M .agent/state.duckdb</code></li><li><code> M .agents/skills/.agents-kit.json</code></li><li><code> M .gitignore</code></li><li><code> M docs/knowledge/blender52/REGRESSION.md</code></li><li><code> M docs/knowledge/blender52/proofs/kb01_render.png</code></li><li><em>... et 39 autres fichiers</em></li></ul></div>
+                    
+                </div>
+                <div class="card-footer">
+                    <a href="blender-ia.html" class="report-link-btn">📄 Consulter le rapport HTML →</a>
+                </div>
+            </div>
+            
+            <div class="repo-card" data-dirty="false" data-behind="0" data-ahead="0" data-name="blender-skills">
+                <div class="card-header">
+                    <div class="card-title">
+                        <h3>blender-skills</h3>
+                        <span class="branch-tag">main</span>
+                    </div>
+                    <div class="badges">
+                        <span class="badge badge-success">Clean</span>
+                        <span class="badge badge-secondary">À jour</span>
+                        <span class="badge badge-dark">En veille</span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <p class="repo-path"><code>C:\GIT\blender-skills</code></p>
+                    <div class="commit-info">Dernier commit: <code>8f778d2</code> - Enhance README.md to reflect support for Cursor, Claude Code, Kiro, and Codex. Update skill count to 94 and reference files to 175+. Revise installation instructions and Quick Start section for clarity, including new commands for Kiro and Codex. Improve overall structure and metadata for better user guidance. (2026-07-10)</div>
+                    
+                    
+                </div>
+                <div class="card-footer">
+                    <a href="blender-skills.html" class="report-link-btn">📄 Consulter le rapport HTML →</a>
+                </div>
+            </div>
+            
+            <div class="repo-card" data-dirty="false" data-behind="0" data-ahead="0" data-name="blender-skills-kevinbadi">
+                <div class="card-header">
+                    <div class="card-title">
+                        <h3>blender-skills-kevinbadi</h3>
+                        <span class="branch-tag">main</span>
+                    </div>
+                    <div class="badges">
+                        <span class="badge badge-success">Clean</span>
+                        <span class="badge badge-secondary">À jour</span>
+                        <span class="badge badge-dark">En veille</span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <p class="repo-path"><code>C:\GIT\blender-skills-kevinbadi</code></p>
+                    <div class="commit-info">Dernier commit: <code>b2f0f81</code> - Add 5 PolyHaven integration skills (2026-04-04)</div>
+                    
+                    
+                </div>
+                <div class="card-footer">
+                    <a href="blender-skills-kevinbadi.html" class="report-link-btn">📄 Consulter le rapport HTML →</a>
+                </div>
+            </div>
+            
+            <div class="repo-card" data-dirty="false" data-behind="0" data-ahead="0" data-name="compare-ia-decision">
+                <div class="card-header">
+                    <div class="card-title">
+                        <h3>compare-IA-decision</h3>
+                        <span class="branch-tag">main</span>
+                    </div>
+                    <div class="badges">
+                        <span class="badge badge-success">Clean</span>
+                        <span class="badge badge-secondary">À jour</span>
+                        <span class="badge badge-dark">En veille</span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <p class="repo-path"><code>C:\GIT\compare-IA-decision</code></p>
+                    <div class="commit-info">Dernier commit: <code>09fc381</code> - chore: untrack .agent and .agents from git (keep local) (2026-10-18)</div>
+                    
+                    
+                </div>
+                <div class="card-footer">
+                    <a href="compare-IA-decision.html" class="report-link-btn">📄 Consulter le rapport HTML →</a>
+                </div>
+            </div>
+            
+            <div class="repo-card" data-dirty="false" data-behind="0" data-ahead="0" data-name="compare-graph-generator">
+                <div class="card-header">
+                    <div class="card-title">
+                        <h3>compare-graph-generator</h3>
+                        <span class="branch-tag">main</span>
+                    </div>
+                    <div class="badges">
+                        <span class="badge badge-success">Clean</span>
+                        <span class="badge badge-secondary">À jour</span>
+                        <span class="badge badge-dark">En veille</span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <p class="repo-path"><code>C:\GIT\compare-graph-generator</code></p>
+                    <div class="commit-info">Dernier commit: <code>3f8f7c9</code> - chore: untrack .agent and .agents from git (keep local) (2026-10-18)</div>
+                    
+                    
+                </div>
+                <div class="card-footer">
+                    <a href="compare-graph-generator.html" class="report-link-btn">📄 Consulter le rapport HTML →</a>
+                </div>
+            </div>
+            
+            <div class="repo-card" data-dirty="false" data-behind="0" data-ahead="0" data-name="computer-use">
+                <div class="card-header">
+                    <div class="card-title">
+                        <h3>computer-use</h3>
+                        <span class="branch-tag">main</span>
+                    </div>
+                    <div class="badges">
+                        <span class="badge badge-success">Clean</span>
+                        <span class="badge badge-secondary">À jour</span>
+                        <span class="badge badge-dark">En veille</span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <p class="repo-path"><code>C:\GIT\computer-use</code></p>
+                    <div class="commit-info">Dernier commit: <code>9d1fd52</code> - chore: untrack .agent and .agents from git (keep local) (2026-10-18)</div>
+                    
+                    
+                </div>
+                <div class="card-footer">
+                    <a href="computer-use.html" class="report-link-btn">📄 Consulter le rapport HTML →</a>
+                </div>
+            </div>
+            
+            <div class="repo-card" data-dirty="false" data-behind="0" data-ahead="0" data-name="crawl4ai-mcp-llm">
+                <div class="card-header">
+                    <div class="card-title">
+                        <h3>crawl4ai-mcp-llm</h3>
+                        <span class="branch-tag">main</span>
+                    </div>
+                    <div class="badges">
+                        <span class="badge badge-success">Clean</span>
+                        <span class="badge badge-secondary">À jour</span>
+                        <span class="badge badge-dark">En veille</span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <p class="repo-path"><code>C:\GIT\crawl4ai-mcp-llm</code></p>
+                    <div class="commit-info">Dernier commit: <code>2465b78</code> - chore: untrack .agent and .agents from git (keep local) (2026-10-18)</div>
+                    
+                    
+                </div>
+                <div class="card-footer">
+                    <a href="crawl4ai-mcp-llm.html" class="report-link-btn">📄 Consulter le rapport HTML →</a>
+                </div>
+            </div>
+            
+            <div class="repo-card" data-dirty="false" data-behind="0" data-ahead="0" data-name="cuty-ssh">
+                <div class="card-header">
+                    <div class="card-title">
+                        <h3>cuty-ssh</h3>
+                        <span class="branch-tag">main</span>
+                    </div>
+                    <div class="badges">
+                        <span class="badge badge-success">Clean</span>
+                        <span class="badge badge-secondary">À jour</span>
+                        <span class="badge badge-dark">En veille</span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <p class="repo-path"><code>C:\GIT\cuty-ssh</code></p>
+                    <div class="commit-info">Dernier commit: <code>a862380</code> - chore: release v0.8.0 — SFTP Folder Transfers, Drag & Drop & Pageant Hardening (2026-10-23)</div>
+                    
+                    
+                </div>
+                <div class="card-footer">
+                    <a href="cuty-ssh.html" class="report-link-btn">📄 Consulter le rapport HTML →</a>
+                </div>
+            </div>
+            
+            <div class="repo-card" data-dirty="false" data-behind="0" data-ahead="0" data-name="diagram">
+                <div class="card-header">
+                    <div class="card-title">
+                        <h3>diagram</h3>
+                        <span class="branch-tag">main</span>
+                    </div>
+                    <div class="badges">
+                        <span class="badge badge-success">Clean</span>
+                        <span class="badge badge-secondary">À jour</span>
+                        <span class="badge badge-dark">En veille</span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <p class="repo-path"><code>C:\GIT\diagram</code></p>
+                    <div class="commit-info">Dernier commit: <code>bd523ca</code> - chore: remove unused GitHub Actions workflows (no releases published) (#1) (2026-10-22)</div>
+                    
+                    
+                </div>
+                <div class="card-footer">
+                    <a href="diagram.html" class="report-link-btn">📄 Consulter le rapport HTML →</a>
+                </div>
+            </div>
+            
+            <div class="repo-card" data-dirty="false" data-behind="0" data-ahead="0" data-name="disk-clean">
+                <div class="card-header">
+                    <div class="card-title">
+                        <h3>disk-clean</h3>
+                        <span class="branch-tag">main</span>
+                    </div>
+                    <div class="badges">
+                        <span class="badge badge-success">Clean</span>
+                        <span class="badge badge-secondary">À jour</span>
+                        <span class="badge badge-dark">En veille</span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <p class="repo-path"><code>C:\GIT\disk-clean</code></p>
+                    <div class="commit-info">Dernier commit: <code>a472104</code> - chore: untrack .agent and .agents from git (keep local) (2026-10-18)</div>
+                    
+                    
+                </div>
+                <div class="card-footer">
+                    <a href="disk-clean.html" class="report-link-btn">📄 Consulter le rapport HTML →</a>
+                </div>
+            </div>
+            
+            <div class="repo-card" data-dirty="false" data-behind="0" data-ahead="0" data-name="docx-to-wav">
+                <div class="card-header">
+                    <div class="card-title">
+                        <h3>docx-to-wav</h3>
+                        <span class="branch-tag">main</span>
+                    </div>
+                    <div class="badges">
+                        <span class="badge badge-success">Clean</span>
+                        <span class="badge badge-secondary">À jour</span>
+                        <span class="badge badge-dark">En veille</span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <p class="repo-path"><code>C:\GIT\docx-to-wav</code></p>
+                    <div class="commit-info">Dernier commit: <code>85b4de0</code> - chore: untrack .agent and .agents from git (keep local) (2026-10-18)</div>
+                    
+                    
+                </div>
+                <div class="card-footer">
+                    <a href="docx-to-wav.html" class="report-link-btn">📄 Consulter le rapport HTML →</a>
+                </div>
+            </div>
+            
+            <div class="repo-card" data-dirty="true" data-behind="0" data-ahead="2" data-name="ella-swap">
+                <div class="card-header">
+                    <div class="card-title">
+                        <h3>ella-swap</h3>
+                        <span class="branch-tag">fix/keyed-pip-cards-loop-audio</span>
+                    </div>
+                    <div class="badges">
+                        <span class="badge badge-warning">Dirty (31)</span>
+                        <span class="badge badge-info">Avance +2</span> 
+                        <span class="badge badge-dark">En veille</span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <p class="repo-path"><code>C:\GIT\ella-swap</code></p>
+                    <div class="commit-info">Dernier commit: <code>39bfd8e</code> - chore(agents): pin .agents/skills to LF and the DuckDB ledger to binary (CRLF smudge guard) (2026-10-16)</div>
+                    <div class="files-box"><strong>Fichiers modifiés :</strong><ul><li><code> M .agents/skills/.agents-kit.json</code></li><li><code> M .gitignore</code></li><li><code> M AGENTS.md</code></li><li><code> M docs/AUDIT_2026-10-11.md</code></li><li><code> M docs/PROCESS.md</code></li><li><em>... et 26 autres fichiers</em></li></ul></div>
+                    
+                </div>
+                <div class="card-footer">
+                    <a href="ella-swap.html" class="report-link-btn">📄 Consulter le rapport HTML →</a>
+                </div>
+            </div>
+            
+            <div class="repo-card" data-dirty="true" data-behind="0" data-ahead="0" data-name="fire_ui">
+                <div class="card-header">
+                    <div class="card-title">
+                        <h3>fire_UI</h3>
+                        <span class="branch-tag">main</span>
+                    </div>
+                    <div class="badges">
+                        <span class="badge badge-warning">Dirty (1)</span>
+                        <span class="badge badge-secondary">À jour</span>
+                        <span class="badge badge-dark">En veille</span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <p class="repo-path"><code>C:\GIT\fire_UI</code></p>
+                    <div class="commit-info">Dernier commit: <code>c88b466</code> - Merge pull request #48 from laurentvv/feat/persist-cockpit-assumptions (2026-10-20)</div>
+                    <div class="files-box"><strong>Fichiers modifiés :</strong><ul><li><code>?? frontnextjs/prisma/patrimoine.db.pre-cockpit</code></li></ul></div>
+                    
+                </div>
+                <div class="card-footer">
+                    <a href="fire_UI.html" class="report-link-btn">📄 Consulter le rapport HTML →</a>
+                </div>
+            </div>
+            
+            <div class="repo-card" data-dirty="false" data-behind="0" data-ahead="0" data-name="gen-cv">
+                <div class="card-header">
+                    <div class="card-title">
+                        <h3>gen-cv</h3>
+                        <span class="branch-tag">main</span>
+                    </div>
+                    <div class="badges">
+                        <span class="badge badge-success">Clean</span>
+                        <span class="badge badge-secondary">À jour</span>
+                        <span class="badge badge-dark">En veille</span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <p class="repo-path"><code>C:\GIT\gen-cv</code></p>
+                    <div class="commit-info">Dernier commit: <code>952613a</code> - chore: untrack .agent and .agents from git (keep local) (2026-10-18)</div>
+                    
+                    
+                </div>
+                <div class="card-footer">
+                    <a href="gen-cv.html" class="report-link-btn">📄 Consulter le rapport HTML →</a>
+                </div>
+            </div>
+            
+            <div class="repo-card" data-dirty="false" data-behind="0" data-ahead="1" data-name="generator-assets">
+                <div class="card-header">
+                    <div class="card-title">
+                        <h3>generator-assets</h3>
+                        <span class="branch-tag">main</span>
+                    </div>
+                    <div class="badges">
+                        <span class="badge badge-success">Clean</span>
+                        <span class="badge badge-info">Avance +1</span> 
+                        <span class="badge badge-dark">En veille</span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <p class="repo-path"><code>C:\GIT\generator-assets</code></p>
+                    <div class="commit-info">Dernier commit: <code>5a03fde</code> - docs(veille): llama.cpp b11836->b11838 ALWAYS-FOLLOW 14th (smoke 203.6 t/s) + certifi 2026.10.23 (93/93 PASS) (2026-10-23)</div>
+                    
+                    
+                </div>
+                <div class="card-footer">
+                    <a href="generator-assets.html" class="report-link-btn">📄 Consulter le rapport HTML →</a>
+                </div>
+            </div>
+            
+            <div class="repo-card" data-dirty="false" data-behind="0" data-ahead="0" data-name="graph-orchestrator-smolagents">
+                <div class="card-header">
+                    <div class="card-title">
+                        <h3>graph-orchestrator-smolagents</h3>
+                        <span class="branch-tag">main</span>
+                    </div>
+                    <div class="badges">
+                        <span class="badge badge-success">Clean</span>
+                        <span class="badge badge-secondary">À jour</span>
+                        <span class="badge badge-dark">En veille</span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <p class="repo-path"><code>C:\GIT\graph-orchestrator-smolagents</code></p>
+                    <div class="commit-info">Dernier commit: <code>7db4924</code> - chore: untrack .agent and .agents from git (keep local) (2026-10-18)</div>
+                    
+                    
+                </div>
+                <div class="card-footer">
+                    <a href="graph-orchestrator-smolagents.html" class="report-link-btn">📄 Consulter le rapport HTML →</a>
+                </div>
+            </div>
+            
+            <div class="repo-card" data-dirty="false" data-behind="0" data-ahead="0" data-name="haproxy-dataset-generator">
+                <div class="card-header">
+                    <div class="card-title">
+                        <h3>haproxy-dataset-generator</h3>
+                        <span class="branch-tag">main</span>
+                    </div>
+                    <div class="badges">
+                        <span class="badge badge-success">Clean</span>
+                        <span class="badge badge-secondary">À jour</span>
+                        <span class="badge badge-dark">En veille</span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <p class="repo-path"><code>C:\GIT\haproxy-dataset-generator</code></p>
+                    <div class="commit-info">Dernier commit: <code>ff61f2b</code> - chore: untrack .agent and .agents from git (keep local) (2026-10-18)</div>
+                    
+                    
+                </div>
+                <div class="card-footer">
+                    <a href="haproxy-dataset-generator.html" class="report-link-btn">📄 Consulter le rapport HTML →</a>
+                </div>
+            </div>
+            
+            <div class="repo-card" data-dirty="false" data-behind="0" data-ahead="0" data-name="infrablueprint-blueprints">
+                <div class="card-header">
+                    <div class="card-title">
+                        <h3>infrablueprint-blueprints</h3>
+                        <span class="branch-tag">main</span>
+                    </div>
+                    <div class="badges">
+                        <span class="badge badge-success">Clean</span>
+                        <span class="badge badge-secondary">À jour</span>
+                        <span class="badge badge-dark">En veille</span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <p class="repo-path"><code>C:\GIT\infrablueprint-blueprints</code></p>
+                    <div class="commit-info">Dernier commit: <code>e645f05</code> - chore: untrack .agent and .agents from git (keep local) (2026-10-18)</div>
+                    
+                    
+                </div>
+                <div class="card-footer">
+                    <a href="infrablueprint-blueprints.html" class="report-link-btn">📄 Consulter le rapport HTML →</a>
+                </div>
+            </div>
+            
+            <div class="repo-card" data-dirty="false" data-behind="0" data-ahead="0" data-name="infrablueprint-org-profile">
+                <div class="card-header">
+                    <div class="card-title">
+                        <h3>infrablueprint-org-profile</h3>
+                        <span class="branch-tag">main</span>
+                    </div>
+                    <div class="badges">
+                        <span class="badge badge-success">Clean</span>
+                        <span class="badge badge-secondary">À jour</span>
+                        <span class="badge badge-dark">En veille</span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <p class="repo-path"><code>C:\GIT\infrablueprint-org-profile</code></p>
+                    <div class="commit-info">Dernier commit: <code>667a0a9</code> - chore: untrack .agent and .agents from git (keep local) (2026-10-18)</div>
+                    
+                    
+                </div>
+                <div class="card-footer">
+                    <a href="infrablueprint-org-profile.html" class="report-link-btn">📄 Consulter le rapport HTML →</a>
+                </div>
+            </div>
+            
+            <div class="repo-card" data-dirty="false" data-behind="0" data-ahead="0" data-name="jardin-os">
+                <div class="card-header">
+                    <div class="card-title">
+                        <h3>jardin-os</h3>
+                        <span class="branch-tag">main</span>
+                    </div>
+                    <div class="badges">
+                        <span class="badge badge-success">Clean</span>
+                        <span class="badge badge-secondary">À jour</span>
+                        <span class="badge badge-dark">En veille</span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <p class="repo-path"><code>C:\GIT\jardin-os</code></p>
+                    <div class="commit-info">Dernier commit: <code>c2f947b</code> - chore: remove unused GitHub Actions workflows (no releases published) (#46) (2026-10-22)</div>
+                    
+                    
+                </div>
+                <div class="card-footer">
+                    <a href="jardin-os.html" class="report-link-btn">📄 Consulter le rapport HTML →</a>
+                </div>
+            </div>
+            
+            <div class="repo-card" data-dirty="false" data-behind="0" data-ahead="0" data-name="knowledge-router-mcp">
+                <div class="card-header">
+                    <div class="card-title">
+                        <h3>knowledge-router-mcp</h3>
+                        <span class="branch-tag">main</span>
+                    </div>
+                    <div class="badges">
+                        <span class="badge badge-success">Clean</span>
+                        <span class="badge badge-secondary">À jour</span>
+                        <span class="badge badge-dark">En veille</span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <p class="repo-path"><code>C:\GIT\knowledge-router-mcp</code></p>
+                    <div class="commit-info">Dernier commit: <code>27baea7</code> - chore: untrack .agent and .agents from git (keep local) (2026-10-18)</div>
+                    
+                    
+                </div>
+                <div class="card-footer">
+                    <a href="knowledge-router-mcp.html" class="report-link-btn">📄 Consulter le rapport HTML →</a>
+                </div>
+            </div>
+            
+            <div class="repo-card" data-dirty="false" data-behind="0" data-ahead="0" data-name="md-doc-search">
+                <div class="card-header">
+                    <div class="card-title">
+                        <h3>md-doc-search</h3>
+                        <span class="branch-tag">main</span>
+                    </div>
+                    <div class="badges">
+                        <span class="badge badge-success">Clean</span>
+                        <span class="badge badge-secondary">À jour</span>
+                        <span class="badge badge-dark">En veille</span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <p class="repo-path"><code>C:\GIT\md-doc-search</code></p>
+                    <div class="commit-info">Dernier commit: <code>0cb0367</code> - chore: untrack .agent and .agents from git (keep local) (2026-10-18)</div>
+                    
+                    
+                </div>
+                <div class="card-footer">
+                    <a href="md-doc-search.html" class="report-link-btn">📄 Consulter le rapport HTML →</a>
+                </div>
+            </div>
+            
+            <div class="repo-card" data-dirty="false" data-behind="0" data-ahead="0" data-name="motion-review">
+                <div class="card-header">
+                    <div class="card-title">
+                        <h3>motion-review</h3>
+                        <span class="branch-tag">main</span>
+                    </div>
+                    <div class="badges">
+                        <span class="badge badge-success">Clean</span>
+                        <span class="badge badge-secondary">À jour</span>
+                        <span class="badge badge-dark">En veille</span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <p class="repo-path"><code>C:\GIT\motion-review</code></p>
+                    <div class="commit-info">Dernier commit: <code>ac7902d</code> - chore: untrack .agent and .agents from git (keep local) (2026-10-18)</div>
+                    
+                    
+                </div>
+                <div class="card-footer">
+                    <a href="motion-review.html" class="report-link-btn">📄 Consulter le rapport HTML →</a>
+                </div>
+            </div>
+            
+            <div class="repo-card" data-dirty="false" data-behind="0" data-ahead="0" data-name="my-claw">
+                <div class="card-header">
+                    <div class="card-title">
+                        <h3>my-claw</h3>
+                        <span class="branch-tag">main</span>
+                    </div>
+                    <div class="badges">
+                        <span class="badge badge-success">Clean</span>
+                        <span class="badge badge-secondary">À jour</span>
+                        <span class="badge badge-dark">En veille</span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <p class="repo-path"><code>C:\GIT\my-claw</code></p>
+                    <div class="commit-info">Dernier commit: <code>4461683</code> - chore: untrack .agent and .agents from git (keep local) (2026-10-18)</div>
+                    
+                    
+                </div>
+                <div class="card-footer">
+                    <a href="my-claw.html" class="report-link-btn">📄 Consulter le rapport HTML →</a>
+                </div>
+            </div>
+            
+            <div class="repo-card" data-dirty="true" data-behind="0" data-ahead="1" data-name="news-editorial-agent">
+                <div class="card-header">
+                    <div class="card-title">
+                        <h3>news-editorial-agent</h3>
+                        <span class="branch-tag">main</span>
+                    </div>
+                    <div class="badges">
+                        <span class="badge badge-warning">Dirty (3)</span>
+                        <span class="badge badge-info">Avance +1</span> 
+                        <span class="badge badge-dark">En veille</span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <p class="repo-path"><code>C:\GIT\news-editorial-agent</code></p>
+                    <div class="commit-info">Dernier commit: <code>75948a4</code> - chore(agents): deploy rust-best-practices skill (apollographql/skills@aafc8944365a) (2026-10-16)</div>
+                    <div class="files-box"><strong>Fichiers modifiés :</strong><ul><li><code> M .agents/skills/.agents-kit.json</code></li><li><code> M .gitignore</code></li><li><code> M histoire.json</code></li></ul></div>
+                    
+                </div>
+                <div class="card-footer">
+                    <a href="news-editorial-agent.html" class="report-link-btn">📄 Consulter le rapport HTML →</a>
+                </div>
+            </div>
+            
+            <div class="repo-card" data-dirty="false" data-behind="0" data-ahead="0" data-name="oil-agent">
+                <div class="card-header">
+                    <div class="card-title">
+                        <h3>oil-agent</h3>
+                        <span class="branch-tag">main</span>
+                    </div>
+                    <div class="badges">
+                        <span class="badge badge-success">Clean</span>
+                        <span class="badge badge-secondary">À jour</span>
+                        <span class="badge badge-dark">En veille</span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <p class="repo-path"><code>C:\GIT\oil-agent</code></p>
+                    <div class="commit-info">Dernier commit: <code>76a2db7</code> - chore: untrack .agent and .agents from git (keep local) (2026-10-18)</div>
+                    
+                    
+                </div>
+                <div class="card-footer">
+                    <a href="oil-agent.html" class="report-link-btn">📄 Consulter le rapport HTML →</a>
+                </div>
+            </div>
+            
+            <div class="repo-card" data-dirty="false" data-behind="0" data-ahead="17" data-name="pandas-ai">
+                <div class="card-header">
+                    <div class="card-title">
+                        <h3>pandas-ai</h3>
+                        <span class="branch-tag">main</span>
+                    </div>
+                    <div class="badges">
+                        <span class="badge badge-success">Clean</span>
+                        <span class="badge badge-info">Avance +17</span> 
+                        <span class="badge badge-dark">En veille</span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <p class="repo-path"><code>C:\GIT\pandas-ai</code></p>
+                    <div class="commit-info">Dernier commit: <code>cd7f560</code> - chore: untrack .agent and .agents from git (keep local) (2026-10-18)</div>
+                    
+                    
+                </div>
+                <div class="card-footer">
+                    <a href="pandas-ai.html" class="report-link-btn">📄 Consulter le rapport HTML →</a>
+                </div>
+            </div>
+            
+            <div class="repo-card" data-dirty="false" data-behind="0" data-ahead="0" data-name="panneaux-solaire">
+                <div class="card-header">
+                    <div class="card-title">
+                        <h3>panneaux-solaire</h3>
+                        <span class="branch-tag">master</span>
+                    </div>
+                    <div class="badges">
+                        <span class="badge badge-success">Clean</span>
+                        <span class="badge badge-secondary">À jour</span>
+                        <span class="badge badge-dark">En veille</span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <p class="repo-path"><code>C:\GIT\panneaux-solaire</code></p>
+                    <div class="commit-info">Dernier commit: <code>facc009</code> - chore: untrack .agent and .agents from git (keep local) (2026-10-18)</div>
+                    
+                    
+                </div>
+                <div class="card-footer">
+                    <a href="panneaux-solaire.html" class="report-link-btn">📄 Consulter le rapport HTML →</a>
+                </div>
+            </div>
+            
+            <div class="repo-card" data-dirty="false" data-behind="0" data-ahead="0" data-name="python-health-audit">
+                <div class="card-header">
+                    <div class="card-title">
+                        <h3>python-health-audit</h3>
+                        <span class="branch-tag">main</span>
+                    </div>
+                    <div class="badges">
+                        <span class="badge badge-success">Clean</span>
+                        <span class="badge badge-secondary">À jour</span>
+                        <span class="badge badge-dark">En veille</span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <p class="repo-path"><code>C:\GIT\python-health-audit</code></p>
+                    <div class="commit-info">Dernier commit: <code>5000d04</code> - chore: untrack .agent and .agents from git (keep local) (2026-10-18)</div>
+                    
+                    
+                </div>
+                <div class="card-footer">
+                    <a href="python-health-audit.html" class="report-link-btn">📄 Consulter le rapport HTML →</a>
+                </div>
+            </div>
+            
+            <div class="repo-card" data-dirty="true" data-behind="0" data-ahead="0" data-name="roblox">
+                <div class="card-header">
+                    <div class="card-title">
+                        <h3>roblox</h3>
+                        <span class="branch-tag">main</span>
+                    </div>
+                    <div class="badges">
+                        <span class="badge badge-warning">Dirty (21)</span>
+                        <span class="badge badge-secondary">À jour</span>
+                        <span class="badge badge-dark">En veille</span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <p class="repo-path"><code>C:\GIT\roblox</code></p>
+                    <div class="commit-info">Dernier commit: <code>4ef0dc7</code> - chore: remove unused GitHub Actions workflows (no releases published) (#14) (2026-10-22)</div>
+                    <div class="files-box"><strong>Fichiers modifiés :</strong><ul><li><code> M .agents/skills/.agents-kit.json</code></li><li><code> M .agents/skills/agent-state/SKILL.md</code></li><li><code> M .agents/skills/agent-state/scripts/state_agents.py</code></li><li><code> M .gitignore</code></li><li><code> M AGENTS.md</code></li><li><em>... et 16 autres fichiers</em></li></ul></div>
+                    
+                </div>
+                <div class="card-footer">
+                    <a href="roblox.html" class="report-link-btn">📄 Consulter le rapport HTML →</a>
+                </div>
+            </div>
+            
+            <div class="repo-card" data-dirty="false" data-behind="0" data-ahead="0" data-name="scpi_scraper_kimi">
+                <div class="card-header">
+                    <div class="card-title">
+                        <h3>scpi_scraper_kimi</h3>
+                        <span class="branch-tag">main</span>
+                    </div>
+                    <div class="badges">
+                        <span class="badge badge-success">Clean</span>
+                        <span class="badge badge-secondary">À jour</span>
+                        <span class="badge badge-dark">En veille</span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <p class="repo-path"><code>C:\GIT\scpi_scraper_kimi</code></p>
+                    <div class="commit-info">Dernier commit: <code>87bad1d</code> - chore: untrack .agent and .agents from git (keep local) (2026-10-18)</div>
+                    
+                    
+                </div>
+                <div class="card-footer">
+                    <a href="scpi_scraper_kimi.html" class="report-link-btn">📄 Consulter le rapport HTML →</a>
+                </div>
+            </div>
+            
+            <div class="repo-card" data-dirty="false" data-behind="0" data-ahead="0" data-name="size-directory">
+                <div class="card-header">
+                    <div class="card-title">
+                        <h3>size-directory</h3>
+                        <span class="branch-tag">main</span>
+                    </div>
+                    <div class="badges">
+                        <span class="badge badge-success">Clean</span>
+                        <span class="badge badge-secondary">À jour</span>
+                        <span class="badge badge-primary">OCR Analysé</span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <p class="repo-path"><code>C:\GIT\size-directory</code></p>
+                    <div class="commit-info">Dernier commit: <code>773a21e</code> - Rename CSV columns: nom_repertoire;taille;nb_fichier;date_fichier_old;date_fichier_recent (2026-10-15)</div>
+                    
+                    <div class="review-box"><strong>Rapport OCR :</strong><pre>Audit Complet C++ : 3 bugs détectés (stack overflow récursif Windows, stale error_code, flush ofstream).</pre></div>
+                </div>
+                <div class="card-footer">
+                    <a href="size-directory.html" class="report-link-btn">📄 Consulter le rapport HTML →</a>
+                </div>
+            </div>
+            
+            <div class="repo-card" data-dirty="false" data-behind="0" data-ahead="0" data-name="strata">
+                <div class="card-header">
+                    <div class="card-title">
+                        <h3>strata</h3>
+                        <span class="branch-tag">main</span>
+                    </div>
+                    <div class="badges">
+                        <span class="badge badge-success">Clean</span>
+                        <span class="badge badge-secondary">À jour</span>
+                        <span class="badge badge-dark">En veille</span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <p class="repo-path"><code>C:\GIT\strata</code></p>
+                    <div class="commit-info">Dernier commit: <code>99693a6</code> - Open a folder itself in Explorer, not its parent (#36) (2026-10-15)</div>
+                    
+                    
+                </div>
+                <div class="card-footer">
+                    <a href="strata.html" class="report-link-btn">📄 Consulter le rapport HTML →</a>
+                </div>
+            </div>
+            
+            <div class="repo-card" data-dirty="false" data-behind="0" data-ahead="0" data-name="trad-fr-to-en">
+                <div class="card-header">
+                    <div class="card-title">
+                        <h3>trad-fr-to-en</h3>
+                        <span class="branch-tag">feat/translation-service</span>
+                    </div>
+                    <div class="badges">
+                        <span class="badge badge-success">Clean</span>
+                        <span class="badge badge-secondary">À jour</span>
+                        <span class="badge badge-dark">En veille</span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <p class="repo-path"><code>C:\GIT\trad-fr-to-en</code></p>
+                    <div class="commit-info">Dernier commit: <code>84bcdcf</code> - chore: untrack .agent and .agents from git (keep local) (2026-10-18)</div>
+                    
+                    
+                </div>
+                <div class="card-footer">
+                    <a href="trad-fr-to-en.html" class="report-link-btn">📄 Consulter le rapport HTML →</a>
+                </div>
+            </div>
+            
+            <div class="repo-card" data-dirty="false" data-behind="0" data-ahead="0" data-name="uisfx-playground">
+                <div class="card-header">
+                    <div class="card-title">
+                        <h3>uisfx-playground</h3>
+                        <span class="branch-tag">main</span>
+                    </div>
+                    <div class="badges">
+                        <span class="badge badge-success">Clean</span>
+                        <span class="badge badge-secondary">À jour</span>
+                        <span class="badge badge-dark">En veille</span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <p class="repo-path"><code>C:\GIT\uisfx-playground</code></p>
+                    <div class="commit-info">Dernier commit: <code>4538526</code> - chore: untrack .agent and .agents from git (keep local) (2026-10-18)</div>
+                    
+                    
+                </div>
+                <div class="card-footer">
+                    <a href="uisfx-playground.html" class="report-link-btn">📄 Consulter le rapport HTML →</a>
+                </div>
+            </div>
+            
+            <div class="repo-card" data-dirty="false" data-behind="0" data-ahead="0" data-name="universal-asset-ripper">
+                <div class="card-header">
+                    <div class="card-title">
+                        <h3>universal-asset-ripper</h3>
+                        <span class="branch-tag">main</span>
+                    </div>
+                    <div class="badges">
+                        <span class="badge badge-success">Clean</span>
+                        <span class="badge badge-secondary">À jour</span>
+                        <span class="badge badge-dark">En veille</span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <p class="repo-path"><code>C:\GIT\universal-asset-ripper</code></p>
+                    <div class="commit-info">Dernier commit: <code>d3320fe</code> - chore: remove unused GitHub Actions workflows (no releases published) (#37) (2026-10-22)</div>
+                    
+                    
+                </div>
+                <div class="card-footer">
+                    <a href="universal-asset-ripper.html" class="report-link-btn">📄 Consulter le rapport HTML →</a>
+                </div>
+            </div>
+            
+            <div class="repo-card" data-dirty="false" data-behind="0" data-ahead="0" data-name="video-analys-ia">
+                <div class="card-header">
+                    <div class="card-title">
+                        <h3>video-analys-ia</h3>
+                        <span class="branch-tag">main</span>
+                    </div>
+                    <div class="badges">
+                        <span class="badge badge-success">Clean</span>
+                        <span class="badge badge-secondary">À jour</span>
+                        <span class="badge badge-dark">En veille</span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <p class="repo-path"><code>C:\GIT\video-analys-ia</code></p>
+                    <div class="commit-info">Dernier commit: <code>fcc08ef</code> - chore: remove unused GitHub Actions workflows (no releases published) (#5) (2026-10-22)</div>
+                    
+                    
+                </div>
+                <div class="card-footer">
+                    <a href="video-analys-ia.html" class="report-link-btn">📄 Consulter le rapport HTML →</a>
+                </div>
+            </div>
+            
+            <div class="repo-card" data-dirty="false" data-behind="0" data-ahead="0" data-name="web-assets">
+                <div class="card-header">
+                    <div class="card-title">
+                        <h3>web-assets</h3>
+                        <span class="branch-tag">fix/pbr-sillet-map-suffixes</span>
+                    </div>
+                    <div class="badges">
+                        <span class="badge badge-success">Clean</span>
+                        <span class="badge badge-secondary">À jour</span>
+                        <span class="badge badge-dark">En veille</span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <p class="repo-path"><code>C:\GIT\web-assets</code></p>
+                    <div class="commit-info">Dernier commit: <code>a1cbc3c</code> - chore: untrack .agent and .agents from git (keep local) (2026-10-18)</div>
+                    
+                    
+                </div>
+                <div class="card-footer">
+                    <a href="web-assets.html" class="report-link-btn">📄 Consulter le rapport HTML →</a>
+                </div>
+            </div>
+            
+            <div class="repo-card" data-dirty="false" data-behind="0" data-ahead="0" data-name="nexusai-client">
+                <div class="card-header">
+                    <div class="card-title">
+                        <h3>NexusAI-Client</h3>
+                        <span class="branch-tag">main</span>
+                    </div>
+                    <div class="badges">
+                        <span class="badge badge-success">Clean</span>
+                        <span class="badge badge-secondary">À jour</span>
+                        <span class="badge badge-dark">En veille</span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <p class="repo-path"><code>D:\GIT\NexusAI-Client</code></p>
+                    <div class="commit-info">Dernier commit: <code>3d89c98</code> - fix(rotation): auto-rotate on empty model responses, support HTTP 410, and validate non-empty text in FallbackGateway (2026-10-02)</div>
+                    
+                    
+                </div>
+                <div class="card-footer">
+                    <a href="NexusAI-Client.html" class="report-link-btn">📄 Consulter le rapport HTML →</a>
+                </div>
+            </div>
+            
+            <div class="repo-card" data-dirty="true" data-behind="0" data-ahead="0" data-name="craft-suite">
+                <div class="card-header">
+                    <div class="card-title">
+                        <h3>craft-suite</h3>
+                        <span class="branch-tag">main</span>
+                    </div>
+                    <div class="badges">
+                        <span class="badge badge-warning">Dirty (1)</span>
+                        <span class="badge badge-secondary">À jour</span>
+                        <span class="badge badge-dark">En veille</span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <p class="repo-path"><code>D:\GIT\craft-suite</code></p>
+                    <div class="commit-info">Dernier commit: <code>41b9ef0</code> - fix: numeric version sort in installed_version (0.11.0 ranked below 0.9.1 lexicographically) + pins bumped to 2026-10-22 suite update (13/14 apps; photocraft deferred - binary in use) (2026-10-22)</div>
+                    <div class="files-box"><strong>Fichiers modifiés :</strong><ul><li><code> M apps.json</code></li></ul></div>
+                    
+                </div>
+                <div class="card-footer">
+                    <a href="craft-suite.html" class="report-link-btn">📄 Consulter le rapport HTML →</a>
+                </div>
+            </div>
+            
+            <div class="repo-card" data-dirty="false" data-behind="0" data-ahead="0" data-name="money">
+                <div class="card-header">
+                    <div class="card-title">
+                        <h3>money</h3>
+                        <span class="branch-tag">main</span>
+                    </div>
+                    <div class="badges">
+                        <span class="badge badge-success">Clean</span>
+                        <span class="badge badge-secondary">À jour</span>
+                        <span class="badge badge-dark">En veille</span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <p class="repo-path"><code>D:\GIT\money</code></p>
+                    <div class="commit-info">Dernier commit: <code>9408e47</code> - chore: untrack .agent and .agents from git (keep local) (2026-10-18)</div>
+                    
+                    
+                </div>
+                <div class="card-footer">
+                    <a href="money.html" class="report-link-btn">📄 Consulter le rapport HTML →</a>
+                </div>
+            </div>
+            
+            <div class="repo-card" data-dirty="true" data-behind="0" data-ahead="0" data-name="moneyv2">
+                <div class="card-header">
+                    <div class="card-title">
+                        <h3>moneyv2</h3>
+                        <span class="branch-tag">main</span>
+                    </div>
+                    <div class="badges">
+                        <span class="badge badge-warning">Dirty (1)</span>
+                        <span class="badge badge-secondary">À jour</span>
+                        <span class="badge badge-dark">En veille</span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <p class="repo-path"><code>D:\GIT\moneyv2</code></p>
+                    <div class="commit-info">Dernier commit: <code>ecdcdd5</code> - feat: automatic backups and undo for destructive actions (#3) (2026-10-20)</div>
+                    <div class="files-box"><strong>Fichiers modifiés :</strong><ul><li><code> M .agents/skills/.agents-kit.json</code></li></ul></div>
+                    
+                </div>
+                <div class="card-footer">
+                    <a href="moneyv2.html" class="report-link-btn">📄 Consulter le rapport HTML →</a>
+                </div>
+            </div>
+            
+            <div class="repo-card" data-dirty="true" data-behind="0" data-ahead="0" data-name="novel2video-ai">
+                <div class="card-header">
+                    <div class="card-title">
+                        <h3>novel2video-ai</h3>
+                        <span class="branch-tag">main</span>
+                    </div>
+                    <div class="badges">
+                        <span class="badge badge-warning">Dirty (1)</span>
+                        <span class="badge badge-secondary">À jour</span>
+                        <span class="badge badge-dark">En veille</span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <p class="repo-path"><code>D:\GIT\novel2video-ai</code></p>
+                    <div class="commit-info">Dernier commit: <code>b2cbdfb</code> - chore: untrack .agent and .agents from git (keep local) (2026-10-18)</div>
+                    <div class="files-box"><strong>Fichiers modifiés :</strong><ul><li><code>?? docs/prompts-novel2video-synthese.md</code></li></ul></div>
+                    
+                </div>
+                <div class="card-footer">
+                    <a href="novel2video-ai.html" class="report-link-btn">📄 Consulter le rapport HTML →</a>
+                </div>
+            </div>
+            
+            <div class="repo-card" data-dirty="true" data-behind="7" data-ahead="8" data-name="ocr-to-validation">
+                <div class="card-header">
+                    <div class="card-title">
+                        <h3>ocr-to-validation</h3>
+                        <span class="branch-tag">main</span>
+                    </div>
+                    <div class="badges">
+                        <span class="badge badge-warning">Dirty (2)</span>
+                        <span class="badge badge-danger">Retard -7</span> <span class="badge badge-info">Avance +8</span> 
+                        <span class="badge badge-dark">En veille</span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <p class="repo-path"><code>D:\GIT\ocr-to-validation</code></p>
+                    <div class="commit-info">Dernier commit: <code>055e100</code> - chore(agents): pin .agents/skills to LF and the DuckDB ledger to binary (CRLF smudge guard) (2026-10-16)</div>
+                    <div class="files-box"><strong>Fichiers modifiés :</strong><ul><li><code> M .agents/skills/.agents-kit.json</code></li><li><code> M .gitignore</code></li></ul></div>
+                    
+                </div>
+                <div class="card-footer">
+                    <a href="ocr-to-validation.html" class="report-link-btn">📄 Consulter le rapport HTML →</a>
+                </div>
+            </div>
+            
+    </div>
+
+    <script>
+        let currentFilter = 'all';
+
+        function setFilter(filter, btn) {
+            currentFilter = filter;
+            document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            filterRepos();
+        }
+
+        function filterRepos() {
+            const search = document.getElementById('search').value.toLowerCase();
+            const cards = document.querySelectorAll('.repo-card');
+
+            cards.forEach(card => {
+                const name = card.getAttribute('data-name');
+                const isDirty = card.getAttribute('data-dirty') === 'true';
+                const behind = parseInt(card.getAttribute('data-behind') || '0');
+
+                const matchesSearch = name.includes(search);
+                let matchesFilter = true;
+
+                if (currentFilter === 'dirty') matchesFilter = isDirty;
+                else if (currentFilter === 'clean') matchesFilter = !isDirty;
+                else if (currentFilter === 'behind') matchesFilter = behind > 0;
+
+                if (matchesSearch && matchesFilter) {
+                    card.style.display = 'flex';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+        }
+    </script>
+</body>
+</html>

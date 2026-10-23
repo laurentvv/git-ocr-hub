@@ -3,7 +3,7 @@ import os
 import shutil
 import subprocess
 import urllib.request
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List
 
 class OcrRunner:
     """Manages OpenCodeReview (ocr) CLI interactions and LLM connectivity."""
@@ -67,6 +67,25 @@ class OcrRunner:
         if commit:
             args.extend(["-c", commit])
 
+        return self._execute_ocr_cmd(args, timeout)
+
+    def run_scan(self, repo_path: str, path: Optional[str] = None, no_plan: bool = True, timeout: int = 900) -> Dict[str, Any]:
+        """Execute full repository scan (audit complet sans diff)."""
+        args = [
+            self.ocr_cmd, "scan",
+            "--repo", repo_path,
+            "--format", "json",
+            "--audience", "agent"
+        ]
+        if path:
+            args.extend(["--path", path])
+        if no_plan:
+            args.append("--no-plan")
+
+        return self._execute_ocr_cmd(args, timeout)
+
+    def _execute_ocr_cmd(self, args: List[str], timeout: int) -> Dict[str, Any]:
+        """Internal helper to execute OCR commands and parse results."""
         try:
             cp = subprocess.run(
                 args,
@@ -86,7 +105,6 @@ class OcrRunner:
                 try:
                     data = json.loads(raw_output)
                 except json.JSONDecodeError:
-                    # Sometimes logs are appended before JSON
                     lines = raw_output.splitlines()
                     for line in reversed(lines):
                         line = line.strip()
@@ -110,7 +128,7 @@ class OcrRunner:
                 "exit_code": -1,
                 "parsed": None,
                 "raw": "",
-                "stderr": f"Review timed out after {timeout} seconds."
+                "stderr": f"Commande OCR expirée après {timeout} secondes."
             }
         except Exception as e:
             return {

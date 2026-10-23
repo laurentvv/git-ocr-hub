@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rapport OCR - size-directory</title>
+    <style>
+        :root {
+            --bg: #0f172a;
+            --surface: #1e293b;
+            --surface-hover: #334155;
+            --text: #f8fafc;
+            --text-muted: #94a3b8;
+            --primary: #38bdf8;
+            --success: #34d399;
+            --warning: #fbbf24;
+            --danger: #f87171;
+            --border: #334155;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            padding: 2rem;
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+        .top-nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border);
+        }
+        .back-link {
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: color 0.2s;
+        }
+        .back-link:hover { text-decoration: underline; color: #7dd3fc; }
+        .header {
+            background: var(--surface);
+            padding: 1.5rem;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            margin-bottom: 1.5rem;
+        }
+        .header h1 {
+            color: var(--primary);
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+        .repo-meta {
+            display: flex;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+            margin-top: 0.8rem;
+        }
+        .badges { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.8rem; }
+        .badge {
+            font-size: 0.8rem;
+            font-weight: 600;
+            padding: 0.3rem 0.6rem;
+            border-radius: 4px;
+        }
+        .badge-success { background: rgba(52, 211, 153, 0.2); color: var(--success); }
+        .badge-warning { background: rgba(251, 191, 36, 0.2); color: var(--warning); }
+        .badge-danger { background: rgba(248, 113, 113, 0.2); color: var(--danger); }
+        .badge-info { background: rgba(56, 189, 248, 0.2); color: var(--primary); }
+        .badge-secondary { background: rgba(148, 163, 184, 0.2); color: var(--text-muted); }
+        
+        .section-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        .section-card h2 {
+            font-size: 1.3rem;
+            color: var(--text);
+            margin-bottom: 1rem;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 0.5rem;
+        }
+        .section-card h3 {
+            font-size: 1.05rem;
+            color: var(--primary);
+            margin: 1rem 0 0.5rem 0;
+        }
+        .commit-box {
+            background: #0f172a;
+            padding: 1rem;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 0.75rem;
+            border: 1px solid var(--border);
+        }
+        .file-list {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 0.3rem;
+        }
+        .file-list li code {
+            background: #0f172a;
+            color: var(--warning);
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            font-family: monospace;
+            display: inline-block;
+        }
+        .banner {
+            padding: 0.75rem 1rem;
+            border-radius: 6px;
+            font-weight: 500;
+            margin-bottom: 1rem;
+        }
+        .banner-success { background: rgba(52, 211, 153, 0.15); color: var(--success); border: 1px solid rgba(52, 211, 153, 0.3); }
+        .banner-warning { background: rgba(251, 191, 36, 0.15); color: var(--warning); border: 1px solid rgba(251, 191, 36, 0.3); }
+        .banner-info { background: rgba(56, 189, 248, 0.15); color: var(--primary); border: 1px solid rgba(56, 189, 248, 0.3); }
+        
+        .code-box {
+            background: #0f172a;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 1rem;
+            font-family: "Cascadia Code", Consolas, Menlo, Monaco, monospace;
+            font-size: 0.85rem;
+            white-space: pre-wrap;
+            word-break: break-word;
+            overflow-x: auto;
+            color: #e2e8f0;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+        .stderr-box {
+            color: #cbd5e1;
+            font-size: 0.8rem;
+        }
+        .finding-item {
+            background: #0f172a;
+            border-left: 4px solid var(--primary);
+            padding: 0.8rem;
+            border-radius: 4px;
+            margin-bottom: 0.8rem;
+        }
+        .finding-title {
+            font-weight: bold;
+            color: var(--primary);
+            margin-bottom: 0.3rem;
+            font-size: 0.9rem;
+        }
+        .finding-body {
+            font-size: 0.85rem;
+            color: var(--text);
+            white-space: pre-wrap;
+        }
+        details.collapsible {
+            margin-top: 1rem;
+            cursor: pointer;
+        }
+        details.collapsible summary {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            user-select: none;
+            margin-bottom: 0.5rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="top-nav">
+            <a href="index.html" class="back-link">← Retour au Tableau de Bord Global</a>
+            <span style="color: var(--text-muted); font-size: 0.85rem;">Généré le : 23/10/2026 21:38:26</span>
+        </div>
+
+        <div class="header">
+            <h1>size-directory</h1>
+            <p style="color: var(--text-muted); font-size: 0.9rem;"><code>C:\GIT\size-directory</code></p>
+            <div class="badges">
+                <span class="badge badge-info">Branche : main</span>
+                <span class="badge badge-success">✅ Propre (Clean)</span>
+                <span class="badge badge-secondary">À jour avec remote</span>
+            </div>
+        </div>
+
+        <div class="section-card">
+            <h2>📌 Dernier Commit Git</h2>
+            
+            <div class="commit-box">
+                <div><strong>Hash :</strong> <code>773a21e8</code></div>
+                <div><strong>Auteur :</strong> Laurent VOLFF</div>
+                <div><strong>Date :</strong> 2026-10-15</div>
+                <div><strong>Message :</strong> <em>Rename CSV columns: nom_repertoire;taille;nb_fichier;date_fichier_old;date_fichier_recent</em></div>
+            </div>
+            
+        </div>
+
+        
+        
+            <div class="section-card">
+                <h2>🤖 Analyse OpenCodeReview (OCR)</h2>
+                <div class="banner banner-success">✅ Revue IA complétée avec succès</div>
+                
+                <h3>Sortie de la Revue :</h3>
+                <pre class="code-box">[ocr] full-scan: 1 file(s) discovered, reviewing 1 in C:\GIT\size-directory
+[ocr] estimated cost: ~1 file(s), est. 48K input + 7K output ≈ 55K total tokens (rough; actual reported after run)
+[ocr] scan dispatch: 1 batch(es) by by-language strategy
+[ocr]   ▶ file_find query_name=dirsize
+[ocr]   ✔ file_find (30ms)
+[ocr]   ▶ code_search search_text=dirsize.cpp
+[ocr]   ✔ code_search (30ms)
+[ocr]   ▶ code_comment
+[ocr]   ✔ code_comment (0s)
+[ocr] scan dedup batch #0: 4 → 3 comments
+[ocr] Summary: 1 file(s) reviewed, 3 comment(s), ~32626 token(s) used (input: ~28416, output: ~4210), cache(read: ~18460, write: ~0), 6m31s elapsed
+[ocr] Session: d006cb6d-a65b-4e47-ae27-62c204af0480
+
+─── dirsize.cpp:242-244 ───
+[bug · high] scanRecursive can overflow the stack or loop indefinitely because it recurses one frame
+per directory depth and lacks a cycle guard on Windows. Unlike the POSIX path, which records (dev,
+ino) in g_visitedDirs, the Windows scanner does not know which directories were already visited, so
+a bind mount pointing inside its own tree (or inside &lt;repertoire&gt;) makes the same directory reappear
+and recurse forever. This is also a problem for very deep legitimate trees (e.g. several thousand
+nested levels). Add a visited-directory check at the top of scanRecursive — keyed on the file ID
+from GetFileInformationByHandle or on the absolute path — and/or convert the recursion to an
+explicit worklist of (path, DirStats) pairs so directory depth does not consume call-stack frames.
+This also makes visited-directory bookkeeping easier to reuse across the Windows and POSIX variants.
+
+
+
+─── dirsize.cpp:370-378 ───
+[bug · medium] Stale error code: `e2` was last written by `entry.is_directory(e2)` above (cleared
+for a non-directory, non-symlink entry). On POSIX, for a FIFO/socket/device at the root level,
+`is_regular_file(e2)` re-evaluates but the old `ec` semantics still hold — the entry is silently
+skipped, so the file never reaches `addFile`. Compare the recursive scanner below which uses a fresh
+`std::error_code lec` per test. Either use a fresh error code here or drop the out-param entirely
+and call `addFile` (which does its own status checks) for every entry that is not a symlink.
+
+
+
+─── dirsize.cpp:414-417 ───
+[maintainability · medium] The trailing `!out` check here (and the one in `writeRow`&#x27;s caller) can
+never fire: `std::ofstream::flush()` is invoked inside the stream&#x27;s destructor (called when the
+local goes out of scope, *after* this check) and at `std::exit`/`atexit` processing, and the
+destructor swallows `ios_base::badbit`. An error detected during the `operator&lt;&lt;` above leaves the
+stream in a failed state, so the `if (!out)` line is effectively dead. Check `out.bad()` /
+`out.fail()` immediately after each write (or at least once right before flushing) if write-failure
+detection is required.
+
+
+
+
+──────── Project Summary ────────
+
+### Top Issues
+1. **Unsafe recursive directory traversal on Windows** — `dirsize.cpp` (`scanRecursive`) recurses one stack frame per directory depth and does not maintain a visited-directory guard on Windows. This can cause stack overflow on deeply nested trees and indefinite loops on cyclic directory structures. The POSIX path records `(dev, ino)` in `g_visitedDirs`; the Windows path appears to lack an equivalent guard.
+2. **Stale error-code handling can silently skip filesystem entries** — `dirsize.cpp` uses an `error_code` value (`e2`/`ec`) after it has been overwritten by prior filesystem calls such as `entry.is_directory(e2)`. On POSIX, this can cause FIFOs, sockets, or device nodes to be skipped or misclassified because the error state no longer reflects the intended check.
+3. **Ineffective output-stream error checks** — `dirsize.cpp` checks `!out` in places where the check cannot fire reliably. The underlying `std::ofstream` flushes during destructor/exit processing, after some of the checks, and the destructor may swallow failures, so write errors can go undetected.
+
+### Module Hotspots
+- `dirsize.cpp` — all current findings are concentrated here, with issues spanning traversal correctness, platform-specific behavior, error-state management, and stream error reporting.
+
+### Cross-Cutting Concerns
+- **Cross-platform traversal divergence** — POSIX and Windows directory handling use different state and guards in `dirsize.cpp`, making Windows-specific edge cases easy to miss.
+- **Fragile error-code lifecycle** — filesystem entry predicates and subsequent conditionals share mutable `std::error_code` state without guaranteed refresh, as seen in `dirsize.cpp`.
+- **Delayed I/O error visibility** — output stream errors are checked in a way that does not align with when `std::ofstream` actually flushes or reports failure in `dirsize.cpp`.
+
+### Quick Wins
+- Add a visited-directory set for the Windows path in `dirsize.cpp`, keyed by a stable directory identity where available, and consider converting `scanRecursive` to an iterative traversal to remove unbounded recursion.
+- Normalize error-code handling in `dirsize.cpp` by refreshing or isolating `std::error_code` values around each filesystem query instead of relying on state left behind by previous calls.
+- Simplify or move stream checks in `dirsize.cpp` so that `out` is flushed explicitly before validation and failure is reported from a check that can actually observe the flush result.
+</pre>
+                
+            </div>
+            
+    </div>
+</body>
+</html>

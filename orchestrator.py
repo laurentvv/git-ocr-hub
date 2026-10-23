@@ -10,6 +10,14 @@ import sys
 import webbrowser
 from typing import Dict, Any, List
 
+# Ensure UTF-8 output on Windows consoles
+if sys.stdout and hasattr(sys.stdout, 'reconfigure'):
+    try:
+        sys.stdout.reconfigure(encoding='utf-8', errors='replace')
+        sys.stderr.reconfigure(encoding='utf-8', errors='replace')
+    except Exception:
+        pass
+
 from core.git_manager import GitManager
 from core.ocr_runner import OcrRunner
 from core.reporter import Reporter
@@ -202,6 +210,51 @@ def cmd_all(args, cfg):
     if args.open:
         webbrowser.open(f"file://{os.path.abspath(index_html)}")
 
+def cmd_scan(args, cfg):
+    git_mgr = GitManager(cfg["monitored_paths"], cfg["excluded_repos"])
+    ocr = OcrRunner(
+        server_url=cfg["llm_server"]["url"],
+        provider=cfg["llm_server"]["provider"],
+        model=cfg["llm_server"]["model"]
+    )
+    reporter = Reporter(cfg["reports"]["output_dir"])
+
+    if not ocr.is_server_alive():
+        print(f"❌ Le serveur local llama-server ne répond pas sur {cfg['llm_server']['url']}")
+        return
+
+    target_repo = args.repo
+    if not target_repo:
+        print("❌ Spécifiez un dépôt à auditer avec --repo <chemin>")
+        return
+
+    st = git_mgr.get_repo_status(target_repo)
+    name = st['name']
+
+    print(f"\n🔍 Lancement d'un Audit Complet (ocr scan) sur {name}...")
+    if args.preview:
+        import subprocess
+        args_prev = [ocr.ocr_cmd, "scan", "--repo", target_repo, "--preview"]
+        if getattr(args, "path", None):
+            args_prev.extend(["--path", args.path])
+        cp = subprocess.run(args_prev, text=True, capture_output=True, encoding="utf-8", errors="replace")
+        print(cp.stdout)
+        return
+
+    subpath = getattr(args, "path", None)
+    scan_res = ocr.run_scan(target_repo, path=subpath, timeout=args.timeout)
+    md_path = reporter.save_markdown_report(name, st, scan_res)
+    html_path = reporter.generate_repo_html(name, st, scan_res)
+    print(f"📄 Rapport Markdown : {md_path}")
+    print(f"🌐 Rapport HTML     : {html_path}")
+
+    if getattr(args, "open", False):
+        webbrowser.open(f"file://{os.path.abspath(html_path)}")
+
+    if scan_res.get("raw"):
+        print("--- Résumé de l'Audit ---")
+        print(scan_res["raw"][:600] + ("..." if len(scan_res["raw"]) > 600 else ""))
+
 def cmd_dashboard(args, cfg):
     output_dir = cfg["reports"]["output_dir"]
     index_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), output_dir, "index.html")
@@ -230,6 +283,14 @@ def main():
     p_rev.add_argument("--timeout", type=int, default=600, help="Délai maximum d'analyse par dépôt (secondes)")
     p_rev.add_argument("--open", action="store_true", help="Ouvrir automatiquement le rapport HTML dans le navigateur")
 
+    # scan (audit complet)
+    p_scan = subparsers.add_parser("scan", help="Lancer un audit complet (ocr scan) sur un dépôt ou fichier")
+    p_scan.add_argument("--repo", required=True, help="Chemin vers le dépôt à auditer")
+    p_scan.add_argument("--path", help="Fichier ou sous-répertoire spécifique à cibler")
+    p_scan.add_argument("--preview", action="store_true", help="Afficher les fichiers qui seraient audités sans appeler l'IA")
+    p_scan.add_argument("--timeout", type=int, default=900, help="Délai maximum d'analyse (secondes)")
+    p_scan.add_argument("--open", action="store_true", help="Ouvrir automatiquement le rapport HTML dans le navigateur")
+
     # all
     p_all = subparsers.add_parser("all", help="Synchroniser, analyser et générer le tableau de bord HTML")
     p_all.add_argument("--no-review", action="store_true", help="Ignorer l'analyse IA OCR (synchronisation et dashboard uniquement)")
@@ -246,6 +307,7 @@ def main():
         "status": cmd_status,
         "sync": cmd_sync,
         "review": cmd_review,
+        "scan": cmd_scan,
         "all": cmd_all,
         "dashboard": cmd_dashboard,
     }
