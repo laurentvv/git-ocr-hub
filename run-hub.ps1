@@ -13,13 +13,15 @@
 [CmdletBinding()]
 param (
     [Parameter(Position = 0)]
-    [ValidateSet("status", "sync", "review", "all", "dashboard", "help")]
+    [ValidateSet("status", "sync", "review", "scan", "all", "dashboard", "help")]
     [string]$Action = "",
 
     [string]$Repo = "",
+    [string]$Path = "",
+    [string]$Commit = "",
     [switch]$Preview,
     [switch]$OpenDashboard,
-    [int]$Timeout = 300
+    [int]$Timeout = 600
 )
 
 $ErrorActionPreference = "Stop"
@@ -39,19 +41,25 @@ if (-not $Action) {
     Write-Host "==========================================================" -ForegroundColor Cyan
     Write-Host "  1. Afficher l'état de tous les dépôts (status)"
     Write-Host "  2. Synchroniser les dépôts propres (sync : fetch + pull FF)"
-    Write-Host "  3. Lancer une revue OCR sur les dépôts modifiés (review)"
-    Write-Host "  4. Exécution complète (sync + review + dashboard)"
-    Write-Host "  5. Ouvrir le Dashboard HTML dans le navigateur"
+    Write-Host "  3. Revue diff OCR sur modifications locales (review)"
+    Write-Host "  4. Audit complet d'un dépôt entier sans diff (scan)"
+    Write-Host "  5. Exécution complète (sync + review + dashboard)"
+    Write-Host "  6. Ouvrir le Dashboard HTML dans le navigateur (dashboard)"
     Write-Host "  Q. Quitter"
     Write-Host "==========================================================" -ForegroundColor Cyan
-    $choice = Read-Host "Votre choix (1-5 ou Q)"
+    $choice = Read-Host "Votre choix (1-6 ou Q)"
 
     switch ($choice) {
         "1" { $Action = "status" }
         "2" { $Action = "sync" }
         "3" { $Action = "review" }
-        "4" { $Action = "all"; $OpenDashboard = $true }
-        "5" { $Action = "dashboard" }
+        "4" {
+            $Action = "scan"
+            $Repo = Read-Host "Chemin du dépôt à auditer (ex: C:\GIT\mon-depot)"
+            $OpenDashboard = $true
+        }
+        "5" { $Action = "all"; $OpenDashboard = $true }
+        "6" { $Action = "dashboard" }
         default { Write-Host "Opération annulée."; exit 0 }
     }
 }
@@ -62,7 +70,16 @@ $pyArgs = @($orchestratorPath, $Action)
 
 if ($Action -eq "review") {
     if ($Repo) { $pyArgs += @("--repo", $Repo) }
+    if ($Commit) { $pyArgs += @("--commit", $Commit) }
     if ($Preview) { $pyArgs += "--preview" }
+    if ($OpenDashboard) { $pyArgs += "--open" }
+    $pyArgs += @("--timeout", $Timeout)
+}
+elseif ($Action -eq "scan") {
+    if ($Repo) { $pyArgs += @("--repo", $Repo) }
+    if ($Path) { $pyArgs += @("--path", $Path) }
+    if ($Preview) { $pyArgs += "--preview" }
+    if ($OpenDashboard) { $pyArgs += "--open" }
     $pyArgs += @("--timeout", $Timeout)
 }
 elseif ($Action -eq "all") {
