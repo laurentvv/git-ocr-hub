@@ -1,0 +1,18 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.env
+venv/
+.venv/
+env/
+
+# OCR and temporary state
+state/
+reports/raw_json/
+*.log
+
+# Windows
+Thumbs.db
+Desktop.ini

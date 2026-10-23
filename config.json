@@ -1,0 +1,27 @@
+{
+  "monitored_paths": [
+    "C:\\GIT",
+    "D:\\GIT"
+  ],
+  "excluded_repos": [
+    "git-ocr-hub"
+  ],
+  "llm_server": {
+    "url": "http://127.0.0.1:8080/v1",
+    "provider": "local_llama",
+    "model": "Ornith 1.5 9B (C:)",
+    "start_script": "C:\\Modeles_LLM\\start-ocr-local.ps1",
+    "auto_start": false
+  },
+  "review_settings": {
+    "auto_pull_clean": true,
+    "review_on_new_commits": true,
+    "review_dirty_worktrees": true,
+    "max_files_per_review": 10,
+    "format": "json"
+  },
+  "reports": {
+    "output_dir": "reports",
+    "keep_history_days": 30
+  }
+}

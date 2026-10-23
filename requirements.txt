@@ -1,0 +1,5 @@
+# Dépendances pour git-ocr-hub
+# Le cœur fonctionne avec la bibliothèque standard Python 3.10+ (urllib, subprocess, json)
+# Outils recommandés :
+# - OpenCodeReview CLI (npm install -g @alibaba-group/open-code-review)
+# - llama.cpp / llama-server (Winget ou binaire officiel)
