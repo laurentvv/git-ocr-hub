@@ -7,3 +7,4 @@
 - Full repository audit (`ocr scan`) validated on `size-directory` (`dirsize.cpp`), catching 3 concrete issues (Windows recursive traversal without cycle guard, stale error-code state, dead stream error check).
 - Individual HTML reports (`reports/<repo_name>.html`) generated with seamless bi-directional navigation to the master dashboard (`reports/index.html`).
 - The user has validated the entire setup and dashboard ("dashboard parfait").
+- Repository onboarded to agents-kit fleet management: AGENTS.md v3.1, 78 skills deployed, DuckDB state ledger `.agent/state.duckdb`.

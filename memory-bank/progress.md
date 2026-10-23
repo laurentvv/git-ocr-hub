@@ -16,6 +16,7 @@
 - [x] Implemented full-repository audit capability (`ocr scan`) in `orchestrator.py` and `run-hub.ps1`.
 - [x] Completed and verified real end-to-end audit on `size-directory` (`dirsize.cpp`).
 - [x] Initialized complete project documentation and Memory Bank.
+- [x] Integrated with agents-kit (AGENTS.md canon v3.1, 78 vendored agent skills, DuckDB ledger `.agent/state.duckdb`).
 
 ## Future Opportunities
 - Scheduled automation (e.g. daily background cron checking new upstream commits and refreshing audits).
