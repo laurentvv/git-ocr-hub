@@ -14,7 +14,8 @@
 - [x] Implemented standalone individual HTML reports per repository with dark theme.
 - [x] Implemented interactive Master Dashboard (`reports/index.html`) with search and status filters.
 - [x] Implemented full-repository audit capability (`ocr scan`) in `orchestrator.py` and `run-hub.ps1`.
-- [x] Completed and verified real end-to-end audit on `size-directory` (`dirsize.cpp`).
+- [x] Completed and verified real end-to-end audit on `size-directory` (`dirsize.cpp`) - 3 bugs fixed and verified.
+- [x] Completed deep multi-batch audit on `ai-doc2video` (`doc2video/`) - 10 bugs and architectural issues identified, documented, and exported.
 - [x] Initialized complete project documentation and Memory Bank.
 - [x] Integrated with agents-kit (AGENTS.md canon v3.1, 78 vendored agent skills, DuckDB ledger `.agent/state.duckdb`).
 
