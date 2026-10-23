@@ -1,10 +1,11 @@
 import os
 import json
 import datetime
-from typing import Dict, List, Any
+import html
+from typing import Dict, List, Any, Optional
 
 class Reporter:
-    """Generates Markdown reports and interactive HTML Dashboard."""
+    """Generates Markdown reports, Individual Repo HTML Reports, and interactive Master HTML Dashboard."""
 
     def __init__(self, output_dir: str = "reports"):
         self.output_dir = output_dir
@@ -69,6 +70,322 @@ class Reporter:
             f.write("\n".join(md_lines))
 
         return filepath
+
+    def generate_repo_html(self, repo_name: str, status_data: Dict[str, Any], review_data: Optional[Dict[str, Any]] = None) -> str:
+        """Create and save a standalone HTML report dedicated specifically to this repository."""
+        now = datetime.datetime.now()
+        now_str = now.strftime("%d/%m/%Y %H:%M:%S")
+
+        branch = status_data.get("branch", "inconnue")
+        is_dirty = status_data.get("is_dirty", False)
+        dirty_count = status_data.get("dirty_count", 0)
+        behind = status_data.get("behind", 0)
+        ahead = status_data.get("ahead", 0)
+        root_path = status_data.get("path", "")
+        last_c = status_data.get("last_commit", {})
+
+        badge_dirty = '<span class="badge badge-warning">⚠️ Modifié (' + str(dirty_count) + ' fichiers)</span>' if is_dirty else '<span class="badge badge-success">✅ Propre (Clean)</span>'
+        
+        sync_badges = []
+        if behind > 0:
+            sync_badges.append(f'<span class="badge badge-danger">Retard: -{behind} commit(s)</span>')
+        if ahead > 0:
+            sync_badges.append(f'<span class="badge badge-info">Avance: +{ahead} commit(s)</span>')
+        if not sync_badges:
+            sync_badges.append('<span class="badge badge-secondary">À jour avec remote</span>')
+        badge_sync = " ".join(sync_badges)
+
+        dirty_files_html = ""
+        if is_dirty and status_data.get("dirty_files"):
+            files_li = "".join([f"<li><code>{html.escape(df)}</code></li>" for df in status_data.get("dirty_files", [])])
+            dirty_files_html = f"""
+            <div class="section-card">
+                <h2>📁 Fichiers Modifiés ({dirty_count})</h2>
+                <ul class="file-list">{files_li}</ul>
+            </div>
+            """
+
+        commit_html = ""
+        if last_c:
+            commit_html = f"""
+            <div class="commit-box">
+                <div><strong>Hash :</strong> <code>{html.escape(last_c.get('hash', '')[:8])}</code></div>
+                <div><strong>Auteur :</strong> {html.escape(last_c.get('author', ''))}</div>
+                <div><strong>Date :</strong> {html.escape(last_c.get('date', ''))}</div>
+                <div><strong>Message :</strong> <em>{html.escape(last_c.get('subject', ''))}</em></div>
+            </div>
+            """
+
+        ocr_content_html = ""
+        if review_data:
+            success = review_data.get("success", False)
+            raw = review_data.get("raw", "")
+            stderr = review_data.get("stderr", "")
+            parsed = review_data.get("parsed")
+
+            status_banner = '<div class="banner banner-success">✅ Revue IA complétée avec succès</div>' if success else '<div class="banner banner-warning">⚠️ Rapport d\'analyse IA / Détails</div>'
+
+            findings_html = ""
+            if parsed and isinstance(parsed, dict) and "comments" in parsed:
+                comments = parsed.get("comments", [])
+                if comments:
+                    findings_html = f"<h3>Commentaires identifiés ({len(comments)}) :</h3>"
+                    for c in comments:
+                        c_file = html.escape(c.get("file", ""))
+                        c_line = c.get("line", "")
+                        c_body = html.escape(c.get("body", ""))
+                        findings_html += f"""
+                        <div class="finding-item">
+                            <div class="finding-title">📄 {c_file} : Ligne {c_line}</div>
+                            <div class="finding-body">{c_body}</div>
+                        </div>
+                        """
+
+            raw_escaped = html.escape(raw) if raw else "<em>Aucune sortie brute textuelle.</em>"
+            stderr_escaped = html.escape(stderr) if stderr else ""
+
+            stderr_section = ""
+            if stderr_escaped:
+                stderr_section = f"""
+                <details class="collapsible">
+                    <summary>Afficher les journaux d'exécution / stderr</summary>
+                    <pre class="code-box stderr-box">{stderr_escaped}</pre>
+                </details>
+                """
+
+            ocr_content_html = f"""
+            <div class="section-card">
+                <h2>🤖 Analyse OpenCodeReview (OCR)</h2>
+                {status_banner}
+                {findings_html}
+                <h3>Sortie de la Revue :</h3>
+                <pre class="code-box">{raw_escaped}</pre>
+                {stderr_section}
+            </div>
+            """
+        else:
+            ocr_content_html = """
+            <div class="section-card">
+                <h2>🤖 Analyse OpenCodeReview (OCR)</h2>
+                <div class="banner banner-info">ℹ️ Aucune revue demandée ou nécessaire (dépôt propre et à jour).</div>
+            </div>
+            """
+
+        html_page = f"""<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rapport OCR - {html.escape(repo_name)}</title>
+    <style>
+        :root {{
+            --bg: #0f172a;
+            --surface: #1e293b;
+            --surface-hover: #334155;
+            --text: #f8fafc;
+            --text-muted: #94a3b8;
+            --primary: #38bdf8;
+            --success: #34d399;
+            --warning: #fbbf24;
+            --danger: #f87171;
+            --border: #334155;
+        }}
+        * {{ box-sizing: border-box; margin: 0; padding: 0; }}
+        body {{
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            padding: 2rem;
+            line-height: 1.6;
+        }}
+        .container {{
+            max-width: 1000px;
+            margin: 0 auto;
+        }}
+        .top-nav {{
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border);
+        }}
+        .back-link {{
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: color 0.2s;
+        }}
+        .back-link:hover {{ text-decoration: underline; color: #7dd3fc; }}
+        .header {{
+            background: var(--surface);
+            padding: 1.5rem;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            margin-bottom: 1.5rem;
+        }}
+        .header h1 {{
+            color: var(--primary);
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }}
+        .repo-meta {{
+            display: flex;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+            margin-top: 0.8rem;
+        }}
+        .badges {{ display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.8rem; }}
+        .badge {{
+            font-size: 0.8rem;
+            font-weight: 600;
+            padding: 0.3rem 0.6rem;
+            border-radius: 4px;
+        }}
+        .badge-success {{ background: rgba(52, 211, 153, 0.2); color: var(--success); }}
+        .badge-warning {{ background: rgba(251, 191, 36, 0.2); color: var(--warning); }}
+        .badge-danger {{ background: rgba(248, 113, 113, 0.2); color: var(--danger); }}
+        .badge-info {{ background: rgba(56, 189, 248, 0.2); color: var(--primary); }}
+        .badge-secondary {{ background: rgba(148, 163, 184, 0.2); color: var(--text-muted); }}
+        
+        .section-card {{
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }}
+        .section-card h2 {{
+            font-size: 1.3rem;
+            color: var(--text);
+            margin-bottom: 1rem;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 0.5rem;
+        }}
+        .section-card h3 {{
+            font-size: 1.05rem;
+            color: var(--primary);
+            margin: 1rem 0 0.5rem 0;
+        }}
+        .commit-box {{
+            background: #0f172a;
+            padding: 1rem;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 0.75rem;
+            border: 1px solid var(--border);
+        }}
+        .file-list {{
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 0.3rem;
+        }}
+        .file-list li code {{
+            background: #0f172a;
+            color: var(--warning);
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            font-family: monospace;
+            display: inline-block;
+        }}
+        .banner {{
+            padding: 0.75rem 1rem;
+            border-radius: 6px;
+            font-weight: 500;
+            margin-bottom: 1rem;
+        }}
+        .banner-success {{ background: rgba(52, 211, 153, 0.15); color: var(--success); border: 1px solid rgba(52, 211, 153, 0.3); }}
+        .banner-warning {{ background: rgba(251, 191, 36, 0.15); color: var(--warning); border: 1px solid rgba(251, 191, 36, 0.3); }}
+        .banner-info {{ background: rgba(56, 189, 248, 0.15); color: var(--primary); border: 1px solid rgba(56, 189, 248, 0.3); }}
+        
+        .code-box {{
+            background: #0f172a;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 1rem;
+            font-family: "Cascadia Code", Consolas, Menlo, Monaco, monospace;
+            font-size: 0.85rem;
+            white-space: pre-wrap;
+            word-break: break-word;
+            overflow-x: auto;
+            color: #e2e8f0;
+            max-height: 500px;
+            overflow-y: auto;
+        }}
+        .stderr-box {{
+            color: #cbd5e1;
+            font-size: 0.8rem;
+        }}
+        .finding-item {{
+            background: #0f172a;
+            border-left: 4px solid var(--primary);
+            padding: 0.8rem;
+            border-radius: 4px;
+            margin-bottom: 0.8rem;
+        }}
+        .finding-title {{
+            font-weight: bold;
+            color: var(--primary);
+            margin-bottom: 0.3rem;
+            font-size: 0.9rem;
+        }}
+        .finding-body {{
+            font-size: 0.85rem;
+            color: var(--text);
+            white-space: pre-wrap;
+        }}
+        details.collapsible {{
+            margin-top: 1rem;
+            cursor: pointer;
+        }}
+        details.collapsible summary {{
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            user-select: none;
+            margin-bottom: 0.5rem;
+        }}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="top-nav">
+            <a href="index.html" class="back-link">← Retour au Tableau de Bord Global</a>
+            <span style="color: var(--text-muted); font-size: 0.85rem;">Généré le : {now_str}</span>
+        </div>
+
+        <div class="header">
+            <h1>{html.escape(repo_name)}</h1>
+            <p style="color: var(--text-muted); font-size: 0.9rem;"><code>{html.escape(root_path)}</code></p>
+            <div class="badges">
+                <span class="badge badge-info">Branche : {html.escape(branch)}</span>
+                {badge_dirty}
+                {badge_sync}
+            </div>
+        </div>
+
+        <div class="section-card">
+            <h2>📌 Dernier Commit Git</h2>
+            {commit_html}
+        </div>
+
+        {dirty_files_html}
+        {ocr_content_html}
+    </div>
+</body>
+</html>
+"""
+        html_filename = f"{repo_name}.html"
+        html_path = os.path.join(self.output_dir, html_filename)
+        with open(html_path, "w", encoding="utf-8") as f:
+            f.write(html_page)
+
+        return html_path
 
     def generate_html_dashboard(self, repos_summary: List[Dict[str, Any]]) -> str:
         """Generate a complete standalone HTML dashboard for all monitored repositories."""
@@ -140,6 +457,9 @@ class Reporter:
                     {commit_info}
                     {dirty_list_html}
                     {review_box}
+                </div>
+                <div class="card-footer">
+                    <a href="{name}.html" class="report-link-btn">📄 Consulter le rapport HTML →</a>
                 </div>
             </div>
             """
@@ -304,6 +624,29 @@ class Reporter:
             overflow-y: auto;
         }}
         .review-box pre {{ white-space: pre-wrap; word-break: break-word; font-family: monospace; }}
+        .card-footer {{
+            margin-top: auto;
+            padding-top: 0.8rem;
+            border-top: 1px solid var(--border);
+        }}
+        .report-link-btn {{
+            display: inline-block;
+            width: 100%;
+            text-align: center;
+            background: #0f172a;
+            color: var(--primary);
+            border: 1px solid var(--primary);
+            padding: 0.5rem 0.8rem;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.2s;
+        }}
+        .report-link-btn:hover {{
+            background: var(--primary);
+            color: #0f172a;
+        }}
     </style>
 </head>
 <body>

@@ -139,10 +139,15 @@ def cmd_review(args, cfg):
             print(prev.get("output", "Aucune prévisualisation disponible."))
             continue
 
-        rev_res = ocr.run_review(path, timeout=args.timeout)
+        commit_target = getattr(args, "commit", None)
+        rev_res = ocr.run_review(path, commit=commit_target, timeout=args.timeout)
         reviewed_any = True
         md_path = reporter.save_markdown_report(name, st, rev_res)
-        print(f"📄 Rapport sauvegardé : {md_path}")
+        html_path = reporter.generate_repo_html(name, st, rev_res)
+        print(f"📄 Rapport Markdown : {md_path}")
+        print(f"🌐 Rapport HTML     : {html_path}")
+        if getattr(args, "open", False):
+            webbrowser.open(f"file://{os.path.abspath(html_path)}")
         if rev_res.get("raw"):
             print("--- Résumé OCR ---")
             print(rev_res["raw"][:500] + ("..." if len(rev_res["raw"]) > 500 else ""))
@@ -176,14 +181,18 @@ def cmd_all(args, cfg):
 
         st['reviewed'] = False
         st['review_snippet'] = ""
+        repo_rev = None
 
         # Revue si dirty et LLM actif
         if st['is_dirty'] and ocr.is_server_alive() and not args.no_review:
             print("🔬 [OCR Review]...", end=" ", flush=True)
-            rev = ocr.run_review(path, timeout=args.timeout)
-            reporter.save_markdown_report(name, st, rev)
+            repo_rev = ocr.run_review(path, timeout=args.timeout)
+            reporter.save_markdown_report(name, st, repo_rev)
             st['reviewed'] = True
-            st['review_snippet'] = rev.get("raw", "")[:300]
+            st['review_snippet'] = repo_rev.get("raw", "")[:300]
+
+        # Génération du rapport HTML individuel pour ce dépôt
+        reporter.generate_repo_html(name, st, repo_rev)
 
         summary_list.append(st)
         print("Fait.")
@@ -216,8 +225,10 @@ def main():
     # review
     p_rev = subparsers.add_parser("review", help="Lancer la revue OCR sur un dépôt ou tous les dépôts modifiés")
     p_rev.add_argument("--repo", help="Chemin vers un dépôt spécifique")
+    p_rev.add_argument("--commit", "-c", help="Hash ou référence d'un commit spécifique à analyser")
     p_rev.add_argument("--preview", action="store_true", help="Afficher uniquement les fichiers qui seraient analysés")
-    p_rev.add_argument("--timeout", type=int, default=300, help="Délai maximum d'analyse par dépôt (secondes)")
+    p_rev.add_argument("--timeout", type=int, default=600, help="Délai maximum d'analyse par dépôt (secondes)")
+    p_rev.add_argument("--open", action="store_true", help="Ouvrir automatiquement le rapport HTML dans le navigateur")
 
     # all
     p_all = subparsers.add_parser("all", help="Synchroniser, analyser et générer le tableau de bord HTML")

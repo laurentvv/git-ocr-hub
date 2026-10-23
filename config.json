@@ -9,7 +9,7 @@
   "llm_server": {
     "url": "http://127.0.0.1:8080/v1",
     "provider": "local_llama",
-    "model": "Ornith 1.5 9B (C:)",
+    "model": "Qwen 27B Uncensored (D:)",
     "start_script": "C:\\Modeles_LLM\\start-ocr-local.ps1",
     "auto_start": false
   },
