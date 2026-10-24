@@ -24,8 +24,10 @@
   ```
 - **VRAM Footprint**: ~14.9 GB / 16.0 GB (100% in VRAM, zero system RAM spillover).
 - **Performance**:
-  - Prompt Processing: ~120 to 180 tokens/sec.
-  - Token Generation: ~13.9 to 14.2 tokens/sec.
+  - Prompt Processing: ~100 to 135 tokens/sec.
+  - Token Generation: ~11.5 to 14.0 tokens/sec.
+  - Review Speed: ~300 lines of code / minute (~0.20s per LOC on full scan).
+  - Telemetry Log: `docs/BENCHMARKS.md`.
 
 ## Tooling & Software Stack
 - **CLI**: `@alibaba-group/open-code-review` v1.13.3.

@@ -18,6 +18,9 @@
 - [x] Completed deep multi-batch audit on `ai-doc2video` (`doc2video/`) - 10 bugs and architectural issues identified, documented, and exported.
 - [x] Initialized complete project documentation and Memory Bank.
 - [x] Integrated with agents-kit (AGENTS.md canon v3.1, 78 vendored agent skills, DuckDB ledger `.agent/state.duckdb`).
+- [x] Published public GitHub repository `laurentvv/git-ocr-hub` with professional English README, MIT license, and packaging metadata.
+- [x] Implemented empirical benchmark & runtime telemetry memory (`docs/BENCHMARKS.md`) recording LOC throughput, delay-per-line, and token speeds.
+- [ ] Ongoing full repository audit on `C:\GIT\blender-ia` (34,416 LOC across 182 files).
 
 ## Future Opportunities
 - Scheduled automation (e.g. daily background cron checking new upstream commits and refreshing audits).

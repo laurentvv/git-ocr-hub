@@ -32,3 +32,4 @@
 - **Fail-Safe Git Operations**: Never attempt rebase or recursive merges automatically; only `--ff-only`.
 - **Decoupled LLM Layer**: Standard OpenAI-compatible API protocol (`/v1/chat/completions`) connecting OpenCodeReview to `llama-server`.
 - **Standalone Static Reports**: All HTML reports are zero-dependency, self-contained, responsive, and render cleanly offline.
+- **Empirical Benchmark Telemetry**: Track execution times, LOC counts, and token processing throughput across local models to predict duration and delay-per-line (see `docs/BENCHMARKS.md`).
