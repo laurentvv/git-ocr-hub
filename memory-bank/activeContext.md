@@ -8,3 +8,6 @@
 - Individual HTML reports (`reports/<repo_name>.html`) generated with seamless bi-directional navigation to the master dashboard (`reports/index.html`).
 - The user has validated the entire setup and dashboard ("dashboard parfait").
 - Repository onboarded to agents-kit fleet management: AGENTS.md v3.1, 78 skills deployed, DuckDB state ledger `.agent/state.duckdb`.
+- Public GitHub repository released: `https://github.com/laurentvv/git-ocr-hub` (README pro, MIT, benchmarks).
+- Successfully completed full audit scan, finding remediation, and PR lifecycle on `C:\GIT\blender-ia` (PR #6 approved by Kilo Code Review and merged into `main`).
+- `llama-server` safely shut down and local GPU memory fully reclaimed.

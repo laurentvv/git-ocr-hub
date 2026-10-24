@@ -21,6 +21,8 @@
 - [x] Published public GitHub repository `laurentvv/git-ocr-hub` with professional English README, MIT license, and packaging metadata.
 - [x] Implemented empirical benchmark & runtime telemetry memory (`docs/BENCHMARKS.md`) recording LOC throughput, delay-per-line, and token speeds.
 - [x] Completed full-repository audit scan on `C:\GIT\blender-ia` (34,416 LOC across 182 files, 15 anomalies detected, standalone HTML & OCR viewer exported).
+- [x] Remediated all 15 audit findings in `C:\GIT\blender-ia`, verified with static analysis (Ruff 0 errors) and test suites (34/34 unit tests, 231/231 regression tests).
+- [x] Created PR #6 on `laurentvv/blender-ia`, validated by automated CI bot Kilo Code Review (pass, 0 issues), squash-merged to `main`, and cleaned up branch.
 
 ## Future Opportunities
 - Scheduled automation (e.g. daily background cron checking new upstream commits and refreshing audits).
