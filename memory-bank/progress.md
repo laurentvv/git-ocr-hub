@@ -20,7 +20,7 @@
 - [x] Integrated with agents-kit (AGENTS.md canon v3.1, 78 vendored agent skills, DuckDB ledger `.agent/state.duckdb`).
 - [x] Published public GitHub repository `laurentvv/git-ocr-hub` with professional English README, MIT license, and packaging metadata.
 - [x] Implemented empirical benchmark & runtime telemetry memory (`docs/BENCHMARKS.md`) recording LOC throughput, delay-per-line, and token speeds.
-- [ ] Ongoing full repository audit on `C:\GIT\blender-ia` (34,416 LOC across 182 files).
+- [x] Completed full-repository audit scan on `C:\GIT\blender-ia` (34,416 LOC across 182 files, 15 anomalies detected, standalone HTML & OCR viewer exported).
 
 ## Future Opportunities
 - Scheduled automation (e.g. daily background cron checking new upstream commits and refreshing audits).

@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rapport d'Audit OCR - blender-ia</title>
+    <style>
+        :root {
+            --bg: #0f172a;
+            --surface: #1e293b;
+            --surface-hover: #334155;
+            --text: #f8fafc;
+            --text-muted: #94a3b8;
+            --primary: #38bdf8;
+            --success: #34d399;
+            --warning: #fbbf24;
+            --danger: #f87171;
+            --border: #334155;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            padding: 2rem;
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 1050px;
+            margin: 0 auto;
+        }
+        .top-nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border);
+        }
+        .back-link {
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: color 0.2s;
+        }
+        .back-link:hover { text-decoration: underline; color: #7dd3fc; }
+        .header {
+            background: var(--surface);
+            padding: 1.5rem;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            margin-bottom: 1.5rem;
+        }
+        .header h1 {
+            color: var(--primary);
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+        .badges { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.8rem; }
+        .badge {
+            font-size: 0.8rem;
+            font-weight: 600;
+            padding: 0.3rem 0.6rem;
+            border-radius: 4px;
+        }
+        .badge-success { background: rgba(52, 211, 153, 0.2); color: var(--success); }
+        .badge-warning { background: rgba(251, 191, 36, 0.2); color: var(--warning); }
+        .badge-danger { background: rgba(248, 113, 113, 0.2); color: var(--danger); }
+        .badge-info { background: rgba(56, 189, 248, 0.2); color: var(--primary); }
+        .badge-secondary { background: rgba(148, 163, 184, 0.2); color: var(--text-muted); }
+        
+        .section-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        .section-card h2 {
+            font-size: 1.3rem;
+            color: var(--text);
+            margin-bottom: 1rem;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 0.5rem;
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        .stat-card {
+            background: #0f172a;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 1rem;
+            text-align: center;
+        }
+        .stat-num {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--primary);
+        }
+        .stat-label {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-top: 0.25rem;
+        }
+        .finding-card {
+            background: #0f172a;
+            border-radius: 6px;
+            padding: 1rem 1.25rem;
+            margin-bottom: 1rem;
+            border-left: 5px solid var(--primary);
+            border-top: 1px solid var(--border);
+            border-right: 1px solid var(--border);
+            border-bottom: 1px solid var(--border);
+        }
+        .finding-card.security { border-left-color: var(--danger); }
+        .finding-card.bug { border-left-color: var(--warning); }
+        .finding-card.perf { border-left-color: #a855f7; }
+        .finding-card.maint { border-left-color: var(--primary); }
+
+        .finding-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+        .finding-file {
+            font-family: monospace;
+            font-weight: 600;
+            color: #e2e8f0;
+            font-size: 0.95rem;
+        }
+        .finding-desc {
+            font-size: 0.9rem;
+            color: var(--text);
+            margin-bottom: 0.6rem;
+            line-height: 1.5;
+        }
+        .finding-code {
+            background: #090d16;
+            border: 1px solid #1e293b;
+            border-radius: 4px;
+            padding: 0.6rem 0.8rem;
+            font-family: monospace;
+            font-size: 0.82rem;
+            color: #38bdf8;
+            overflow-x: auto;
+            white-space: pre-wrap;
+        }
+        .cta-viewer {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.6rem;
+            background: var(--primary);
+            color: #0f172a;
+            font-weight: 700;
+            padding: 0.75rem 1.25rem;
+            border-radius: 6px;
+            text-decoration: none;
+            margin-top: 0.5rem;
+            transition: opacity 0.2s;
+        }
+        .cta-viewer:hover { opacity: 0.9; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="top-nav">
+            <a href="index.html" class="back-link">← Retour au Tableau de Bord Global</a>
+            <span style="color: var(--text-muted); font-size: 0.85rem;">Audit finalisé le : 24/10/2026 15:32:11</span>
+        </div>
+
+        <div class="header">
+            <h1>blender-ia</h1>
+            <p style="color: var(--text-muted); font-size: 0.9rem;"><code>C:\GIT\blender-ia</code></p>
+            <div class="badges">
+                <span class="badge badge-info">Branche : main</span>
+                <span class="badge badge-warning">⚠️ Modifié localement (44 fichiers)</span>
+                <span class="badge badge-secondary">À jour avec origin/main</span>
+                <span class="badge badge-success">Audit Complet Réalisé</span>
+            </div>
+            <div style="margin-top: 1rem;">
+                <a href="blender-ia-ocr.html" class="cta-viewer" target="_blank">
+                    🖥️ Ouvrir le Visualiseur Interactif OCR Complet →
+                </a>
+            </div>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-num" style="color: var(--primary);">34 416</div>
+                <div class="stat-label">Lignes de code auditées</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-num" style="color: var(--warning);">182</div>
+                <div class="stat-label">Fichiers analysés</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-num" style="color: var(--danger);">15</div>
+                <div class="stat-label">Anomalies identifiées</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-num" style="color: var(--success);">100%</div>
+                <div class="stat-label">IA Locale (Qwen 27B)</div>
+            </div>
+        </div>
+
+        <div class="section-card">
+            <h2>🛡️ 1. Sécurité & Injections (2 anomalies)</h2>
+            
+            <div class="finding-card security">
+                <div class="finding-header">
+                    <span class="finding-file">projects/P-29_hq_workflows/dashboard/index.html:35</span>
+                    <span class="badge badge-danger">Sécurité · Medium</span>
+                </div>
+                <div class="finding-desc">
+                    Les noms de fichiers de rendu sont concaténés sans aucun échappement dans l'attribut HTML et le gestionnaire <code>onclick</code> (<code>src="../renders/${r}" onclick="zoom(this.src)"</code>). Si un nom de fichier contient des guillemets ou une balise HTML, cela provoque une injection de code (XSS).
+                </div>
+                <div class="finding-code">Correctif : Échapper la variable avec la fonction esc() déjà définie dans le projet :
+src="../renders/${esc(r)}" onclick="zoom(this.src)"</div>
+            </div>
+
+            <div class="finding-card security">
+                <div class="finding-header">
+                    <span class="finding-file">projects/P-29_hq_workflows/dashboard/index.html:36</span>
+                    <span class="badge badge-danger">Sécurité · Medium</span>
+                </div>
+                <div class="finding-desc">
+                    <code>a.id</code> est injecté sans échappement dans le DOM (<code>onclick="set('${a.id}',...)"</code> / <code>cm('${a.id}',...)</code> et le libellé <code>- ${a.id}</code>), alors que les autres champs sont échappés. Risque de cassure du balisage ou d'injection si un identifiant d'asset contient des caractères spéciaux.
+                </div>
+                <div class="finding-code">Correctif : Appliquer esc(a.id) uniformément sur tous les points d'insertion dans le template.</div>
+            </div>
+        </div>
+
+        <div class="section-card">
+            <h2>🐛 2. Bugs & Défaillances Logiques (5 anomalies)</h2>
+
+            <div class="finding-card bug">
+                <div class="finding-header">
+                    <span class="finding-file">scripts/img2render.py:75</span>
+                    <span class="badge badge-warning">Bug · Medium</span>
+                </div>
+                <div class="finding-desc">
+                    Défaut de logique booléenne dans la condition d'exemption VRAM : la condition actuelle exige <strong>à la fois</strong> <code>--skip-trellis</code> et <code>--stop-after-cutout</code>. Pourtant, le pipeline s'arrête systématiquement après le découpage dès que <code>--stop-after-cutout</code> est actif. Le mode recommandé dans la doc pour vérifier le cut sans GPU plante donc avec "GPU busy".
+                </div>
+                <div class="finding-code">- if used > ns.max_vram_mb and not (ns.skip_trellis and ns.stop_after_cutout):
++ if used > ns.max_vram_mb and not ns.stop_after_cutout:</div>
+            </div>
+
+            <div class="finding-card bug">
+                <div class="finding-header">
+                    <span class="finding-file">scripts/tools/install_extdeps.py:69-71</span>
+                    <span class="badge badge-warning">Bug · Medium</span>
+                </div>
+                <div class="finding-desc">
+                    L'extraction de l'archive wheel n'est réalisée que lors du premier téléchargement. Si le fichier zip <code>dest</code> existe déjà, les exécutions ultérieures le sautent via <code>continue</code>. En cas d'interruption (disque plein, crash, Ctrl+C) entre le téléchargement et l'extraction, le dossier extdeps reste incomplet et n'est jamais réextrait.
+                </div>
+                <div class="finding-code">Correctif : Rendre l'extraction systématique (idempotente) ou valider la présence des artefacts décompressés.</div>
+            </div>
+
+            <div class="finding-card bug">
+                <div class="finding-header">
+                    <span class="finding-file">scripts/tools/install_extdeps.py:60-61</span>
+                    <span class="badge badge-warning">Bug · Medium</span>
+                </div>
+                <div class="finding-desc">
+                    <code>urllib.request.urlretrieve</code> n'est pas protégé par un bloc d'interception d'exceptions. Une erreur réseau ou timeout fait crasher l'intégralité du script au lieu d'enregistrer l'échec et de passer aux paquets suivants.
+                </div>
+                <div class="finding-code">Correctif : Entourer d'un try/except (URLError, OSError, BadZipFile), supprimer le fichier partiel .part et continuer.</div>
+            </div>
+
+            <div class="finding-card bug">
+                <div class="finding-header">
+                    <span class="finding-file">projects/P-29_hq_workflows/dashboard/index.html:40</span>
+                    <span class="badge badge-warning">Bug · Medium</span>
+                </div>
+                <div class="finding-desc">
+                    L'API <code>navigator.clipboard</code> n'est disponible que dans un contexte sécurisé (HTTPS / localhost). Ouvrir ce dashboard localement via <code>file://</code> lève une <code>ReferenceError</code> bloquante au clic.
+                </div>
+                <div class="finding-code">Correctif : Ajouter un fallback sur document.execCommand('copy') avec gestion .catch().</div>
+            </div>
+
+            <div class="finding-card bug">
+                <div class="finding-header">
+                    <span class="finding-file">projects/P-24_scene_nature/scripts/p24_render.py:46</span>
+                    <span class="badge badge-secondary">Bug · Low</span>
+                </div>
+                <div class="finding-desc">
+                    Le dossier de sortie <code>renders/</code> n'est jamais créé préalablement via <code>os.makedirs(..., exist_ok=True)</code>. Sur un environnement propre sans dossier de rendu existant, le script échoue. De plus, les séparateurs d'antislashs sont spécifiques à Windows.
+                </div>
+                <div class="finding-code">renders_dir = os.path.join(P24, "renders")
+os.makedirs(renders_dir, exist_ok=True)
+sc.render.filepath = os.path.join(renders_dir, f"{name}.png")</div>
+            </div>
+        </div>
+
+        <div class="section-card">
+            <h2>⚡ 3. Performance & Optimisations (1 anomalie)</h2>
+
+            <div class="finding-card perf">
+                <div class="finding-header">
+                    <span class="finding-file">projects/P-29_hq_workflows/dashboard/index.html:43 & 48</span>
+                    <span class="badge badge-info">Performance & Fuite</span>
+                </div>
+                <div class="finding-desc">
+                    1. <code>set()</code> appelle <code>save()</code> (qui appelle <code>sum()</code>), puis <code>render()</code> (qui rappelle <code>sum()</code> et réécrit l'intégralité du DOM <code>innerHTML</code>).<br>
+                    2. L'URL d'objet Blob générée pour le téléchargement n'est jamais révoquée via <code>URL.revokeObjectURL(x.href)</code>, créant une fuite mémoire à chaque export.
+                </div>
+                <div class="finding-code">Correctif : Supprimer le recalcul doublon dans save() et libérer l'URL Blob après x.click().</div>
+            </div>
+        </div>
+
+        <div class="section-card">
+            <h2>🛠️ 4. Maintenabilité & Configuration (7 anomalies)</h2>
+
+            <div class="finding-card maint">
+                <div class="finding-header">
+                    <span class="finding-file">pyproject.toml:22</span>
+                    <span class="badge badge-secondary">Tests</span>
+                </div>
+                <div class="finding-desc">
+                    La directive <code>testpaths = ["tests/unit"]</code> exclut silencieusement tous les tests de niveau racine <code>tests/test_*.py</code> (tels que <code>test_p02_headphones.py</code>, <code>test_contract.py</code>, <code>test_uv_qc.py</code>) lors d'un <code>uv run pytest</code> sans argument.
+                </div>
+            </div>
+
+            <div class="finding-card maint">
+                <div class="finding-header">
+                    <span class="finding-file">scripts/img2render.py:32</span>
+                    <span class="badge badge-secondary">Observabilité</span>
+                </div>
+                <div class="finding-desc">
+                    En cas d'échec du sous-processus <code>ga_dir</code>, seul le code de sortie numérique est affiché alors que la stacktrace d'erreur Python a disparu. Capturer <code>stderr</code> pour afficher les 1 500 derniers caractères.
+                </div>
+            </div>
+
+            <div class="finding-card maint">
+                <div class="finding-header">
+                    <span class="finding-file">projects/P-24_scene_nature/scripts/p24_render.py:1</span>
+                    <span class="badge badge-secondary">Documentation</span>
+                </div>
+                <div class="finding-desc">
+                    La docstring indique charger <code>scene.blend</code> alors que le code charge <code>scene_v2.blend</code>.
+                </div>
+            </div>
+
+            <div class="finding-card maint">
+                <div class="finding-header">
+                    <span class="finding-file">.gitignore:23 & :36</span>
+                    <span class="badge badge-secondary">Nettoyage</span>
+                </div>
+                <div class="finding-desc">
+                    Règles d'exclusion mortes ou redondantes : <code>projects/P-24_scene_nature/assets/</code> est déjà couverte par le wildcard <code>projects/*/assets/</code>, et <code>*.duckdb.wal</code> est redondante avec la directive générale <code>.agent/</code>.
+                </div>
+            </div>
+
+            <div class="finding-card maint">
+                <div class="finding-header">
+                    <span class="finding-file">docs/knowledge/skills-ref/LICENSE-blender-skills-MIT:3</span>
+                    <span class="badge badge-secondary">Licence</span>
+                </div>
+                <div class="finding-desc">
+                    Mention de copyright "blender-skills contributors" qui ne conserve pas le titulaire upstream original <code>arjun988</code> tel que requis par la licence MIT.
+                </div>
+            </div>
+
+            <div class="finding-card maint">
+                <div class="finding-header">
+                    <span class="finding-file">scripts/build_dashboard.py</span>
+                    <span class="badge badge-secondary">Template Python</span>
+                </div>
+                <div class="finding-desc">
+                    Reporter les correctifs de sécurité (échappement <code>esc()</code>, gestion du presse-papier et révocation Blob) directement dans le générateur Python template.
+                </div>
+            </div>
+        </div>
+
+    </div>
+</body>
+</html>
